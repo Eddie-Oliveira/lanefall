@@ -36,7 +36,7 @@ function valueOf(G, u, R, P) {
     if (t.kind === 'hero') {
       hitHero = true;
       v += eff * 2.2 + (kill ? 32 : 0) + (h.stun || 0) * 8 + (h.root || 0) * 3 + (h.slow || 0) * 2 + (h.silence || 0) * 3 + (h.burn ? h.burn.d * h.burn.t * 1.6 : 0);
-      if (!kill && h.execute && t.hp - d <= 0.35 * t.mhp) v += 32;
+      if (!kill && h.execute && t.hp - d <= EXECUTE * t.mhp) v += 32;
       v += (1 - t.hp / t.mhp) * 6;
     } else if (t.kind === 'minion') v += eff * 0.5 + (kill ? 7 : 0) + (h.burn ? 1 : 0);
     else if (t.kind === 'tower') v += invuln(G, t) ? 0 : towerSafe(G, u, t) ? eff * 2.2 + (kill ? 30 : 0) : eff * 0.15;

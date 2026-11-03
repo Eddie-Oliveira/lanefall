@@ -26,6 +26,30 @@ Rules
 
 ---
 
+### [2026-11-02] v0.3.1 · Prototype: Pyra line of sight, Shade execute 20% and action reset
+areas: CODE | QA
+agent: lead
+- Eddie's playtest feedback applied to the web prototype he is testing (prototype otherwise frozen as reference).
+- Pyra: walls block her basic attack and all spells (units don't); Fireball target tiles behind walls are excluded.
+- Shade: Death Mark executes at or under 20% HP (was 35%). Shuriken / Shadow Step kills (any unit) refund her action; cooldowns still apply, so the chain is bounded by cooldowns. Bots use the new rules.
+- Note: the prototype's reset triggers on any unit kill; GDD v1.0-draft r2 uses a stricter trigger (open question Q12).
+- Files: prototype-web/lanefall-v0.3.html, prototype-web/src/{engine,ai,ui}.js, prototype-web/tests/test_v031.js
+- Tests: prototype-web/tests/test_v031.js 13/13 pass; bot sims on all 3 maps, 1v1–4v4, 0 rule errors
+- Needs: none
+
+### [2026-11-02] v1.0-dev · GDD r2: Pyra line of sight, Shade execute 20% and Shadow Reset
+areas: DESIGN | CODE | BOTS | UX
+agent: design
+- Eddie's v0.3 playtest. New board rule (GDD 3): line of sight from hex center to target center, blocked only by wall hexes; units never block (Skytear-style). Pyra's trait: every Attack and ability needs LoS to its target (Fireball: to the target hex). Numbers unchanged; fallback Pyroblast range 4 → 3.
+- Shade Death Mark: execute at or below 20% of max HP, rounded down (14-HP squishy: ≤ 2 HP; 31-HP tank: ≤ 6). 15% kept as the alternative to test.
+- Shade trait Shadow Reset: once per activation, a Q/W/E hero KO, neutral claim or wave wipe refunds 1 action (4 total); the killing ability stays on cooldown, no chains. A plain last hit does not count (otherwise +1 action every lane turn).
+- Open questions Q11 (LoS for all ranged? recommend yes, allies/globals exempt), Q12 (reset trigger), Q13 (15% vs 20%). Updated sections 3, 6.2, 10, 12, 15, 16.4, 17, 18, 19.
+- Files: docs/design/GDD.md, docs/design/sim/ttk.py
+- Tests: python3 docs/design/sim/ttk.py (shade_report): one-activation KO from current HP, 20% rule: L3 squishy 11/14 (old ≤4 rule 13), L5+items Pyra 20/20, Blademaster 21/29, Bulwark 20/31. Reset double KO: 2nd squishy from 11/14 HP at L3 (9 without). Reset on every last hit = +2/+4 burst at L3/L5.
+- Needs: CODE: HasLineOfSight(from,to) with tests (edge-grazing lines not blocked, units not blocking), Pyra targeting filtered by it, execute = maxHP/5, Shadow Reset refund flag per activation.
+- Needs: BOTS: use HasLineOfSight in Threat/positioning vs Pyra; plan Shade's refunded action from previews (grantsAction).
+- Needs: UX: Pyra LoS overlay (visible vs wall-blocked hexes, sight line to hover, "No line of sight" preview); Shade 4th reset pip and execute threshold on the target HP bar; quick-reference card lines (GDD 15).
+
 ### [2026-11-02] v1.0-dev · GDD v1.0-draft: tabletop redesign
 areas: DESIGN
 agent: design

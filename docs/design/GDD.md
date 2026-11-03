@@ -1,6 +1,6 @@
 # Lanefall — Game Design Document v1.0-draft
 
-Owner: design · Status: **draft for Eddie's review** · Replaces the v0.3 rules (frozen in `prototype-web/`).
+Owner: design · Status: **draft for Eddie's review** (r2: playtest fixes for Pyra line of sight and Shade, see 18.1) · Replaces the v0.3 rules (frozen in `prototype-web/`).
 Inputs: `docs/design/research/tabletop-moba.md`, v0.3 `prototype-web/src/engine.js`, simulations in `docs/design/sim/`.
 Why the redesign: `docs/design/v1.0-redesign-rationale.md`.
 
@@ -55,6 +55,15 @@ table and are the Skytear standard (**from Skytear**). Pointy-top hexes, axial c
 - **Clash zone.** All hexes within 2 of the Front marker. Heroes standing there add Power to their side.
 - **The wave lives on the Front hex.** You can Attack the enemy wave if the Front hex is within your range.
 - Walls block movement and lines; allies can be passed through; you can't end on an occupied hex.
+- **Line of sight (LoS)** (**new**, Eddie's playtest; same idea as Skytear, where heroes see through units). Draw a straight
+  line from the center of your hex to the center of the target hex. It is **blocked if it passes through a wall hex**
+  (blocking terrain). **Units never block LoS**: heroes, minions, neutrals and structures are all see-through. Your own
+  hex and the target hex never block. A line that runs exactly along the edge between a wall and an open hex is **not**
+  blocked (only a line that has walls on both sides of that edge is). Where LoS applies, a target out of LoS cannot be
+  chosen; the board shows it (section 19, UX). **Who needs LoS:** Pyra, for every Attack and ability (her trait,
+  section 10). Whether it extends to every ranged hero is **OPEN Q11**.
+  CODE detail: hex line by cube-coordinate lerp traced twice with a +ε and a −ε nudge; blocked only if *both* traces hit
+  a wall. Use exact integer/fixed-point math so it is deterministic.
 
 | Map | Board (hexes) | Lanes | Nodes per lane | Towers per side per lane (node) | Core node | Best for |
 |---|---|---|---|---|---|---|
@@ -173,6 +182,9 @@ Typical turns: *Move, Attack, Q* · *Q, E, Attack* · *Move, Move, Attack* · *M
 **Marksman extra attack (Eddie's request, kept):** Frostbow's trait **Twin Shot** — her Attack action hits twice
 (same or different targets, each hit reduced by armor separately; two last hits on a wave). It fits the no-repeat
 budget instead of being an exception to it (v0.3 needed a separate `freeAttack` flag and a `freeUsed` tracker).
+
+**Assassin reset (Eddie's request):** Shade's trait **Shadow Reset** gives her +1 action, at most once per activation,
+when Q/W/E scores a kill that matters (hero KO, neutral claim, or wiping the enemy wave). Full rule with Shade in section 10.
 
 ### 6.3 Cooldowns
 Each ability shows **CD n**: after use, it is ready again **n rounds later** (CD 1 = every round). Shown as pips
@@ -348,22 +360,62 @@ MOBA reference: *spinning juggernaut duelist — wins long fights, flurry finish
 | R | Omnislash | Teleport adjacent to an enemy within 3: 6 dmg (deterministic; v0.3's random targets removed). | 4 |
 
 ### Shade — Assassin · HP 10 · ATK 3 · RNG 1 · ARM 0 · SPD 4
-MOBA reference: *stealth assassin with an execute.*
+**Trait — Shadow Reset:** once per activation, when your **Q, W or E** scores a **reset kill**, you get **+1 action**
+this activation. MOBA reference: *stealth assassin with an execute and kill resets.*
 | Key | Ability | Effect | CD |
 |---|---|---|---|
 | Q | Shuriken | Line 3: first enemy hit takes 2 dmg. Wave 1. | 1 |
 | W | Shadow Step | Teleport adjacent to an enemy within 4 (ignores walls): 2 dmg. | 2 |
 | E | Smoke Veil | **Hidden** until your next activation (heroes and towers can't target you; ends if you deal damage) and move 1 hex. | 3 |
-| R | Death Mark | Adjacent enemy: 4 dmg; a hero left at 4 HP or less is KO'd. | 4 |
+| R | Death Mark | Adjacent enemy: 4 dmg; then a hero left **at or below 1/5 of its max HP (rounded down)** is KO'd. | 4 |
+
+**Death Mark execute = 20% of max HP, rounded down** (Eddie's playtest: v0.3 used 35%; the prototype now uses 20%;
+**15% is the alternative to test**, OPEN Q13). It is checked after the 4 damage, against max HP so it grows with the
+target: tanks are executed earlier in HP terms than squishies, as a veteran expects from a % execute.
+
+| Target max HP | 10–14 (squishy L1–L3) | 15–19 | 20–24 (squishy L5 + items) | 25–29 | 30–34 (tank L5 + items) |
+|---|---|---|---|---|---|
+| Executed at ≤ (20%, draft) | **2** | 3 | 4 | 5 | 6 |
+| Executed at ≤ (15%, alt) | 1 (10–13) / 2 (14) | 2 | 3 | 3 (25–26) / 4 | 4 (≤33) / 5 |
+
+Example: Death Mark unlocks at level 3, when a Shade-class hero has 14 HP: Death Mark KOs it from **6 HP** (4 dmg + execute
+at ≤ 2). The v1.0-draft flat "≤ 4 HP" rule was 8 HP; v0.3's 35% would be 8 HP too.
+
+**Shadow Reset — exact rule:**
+- **Reset kill** = Shade's Q, W or E (not R, not Attack, not items) **KOs an enemy hero**, **claims a neutral** (deals its
+  final point: wolf camp, Drake, Golem, Spider Queen), or **kills the last minion of an enemy wave** (wave wiped to 0).
+  A normal last hit that leaves minions in the wave does **not** count (see "why" below).
+- **Effect:** the action spent on that ability is refunded: **+1 action this activation** (so 4 in total). The
+  "each action at most once" rule still holds and the ability stays on cooldown, so the refund **cannot re-use the
+  ability that killed**; it can be any action she has not taken yet (or a second Move if she has used only one).
+- **Cap: once per activation.** A second reset kill in the same activation gives nothing. No chains.
+- **Stunned:** no refund (Stun limits her to 1 action, reset or not). The refund is lost if not used before the activation ends;
+  Recall still ends the activation at once.
+- **Why the cap and the wave-wipe rule:** in v1 lanes every Attack or Wave ability on a wave kills a minion. If any
+  minion kill reset her action, Shuriken (CD 1, Wave 1) would give her a 4th action **every round she is in lane**
+  (sim: +2 burst at level 3, 9 vs 7 dmg on a hero; +4 at level 5, 16 vs 12). That is a stat buff, not a moment. Wiping a
+  wave or stealing a neutral is a real play the enemy can see coming (the wave count is public). Without the cap,
+  Q and W could each refund (5 actions: e.g. Shuriken wipes a 1-minion wave, Shadow Step KOs a low hero, then 3 more). **OPEN Q12** lists the looser alternatives.
+- Sim (`ttk.py`, see below): with the reset, a Shuriken KO on a hero at ≤ 2 HP lets her still Shadow Step + Attack + Death
+  Mark a second squishy from **11 HP** (of 14) at level 3; from 20 HP (of 20, i.e. full) at level 5 with 3 items. Without the
+  reset the second KO needs ≤ 9 / ≤ 16 HP.
 
 ### Pyra — Mage · HP 10 · ATK 1 · RNG 2 · ARM 0 · SPD 3
-MOBA reference: *burst fire mage — area poke, point-and-click nuke.*
+**Trait — Line of Sight:** every Attack and ability needs LoS (section 3) **to its target**: the enemy, or for Fireball
+the **target hex** (the 6 neighbors are then hit without further LoS checks). Walls block; units do not. Attacking the
+enemy wave needs LoS to the Front hex. MOBA reference: *burst fire mage — area poke, point-and-click nuke.*
 | Key | Ability | Effect | CD |
 |---|---|---|---|
-| Q | Fireball | Target hex within 3 and neighbors: 2 dmg to each enemy. Wave 3. | 1 |
-| W | Flame Ring | Enemy within 3: 1 dmg, **Stun**. | 2 |
-| E | Scorch | Enemy within 3: 3 dmg. | 2 |
-| R | Pyroblast | Enemy within 4: 6 dmg. | 4 |
+| Q | Fireball | Target hex within 3 **in LoS** and neighbors: 2 dmg to each enemy. Wave 3. | 1 |
+| W | Flame Ring | Enemy within 3 **in LoS**: 1 dmg, **Stun**. | 2 |
+| E | Scorch | Enemy within 3 **in LoS**: 3 dmg. | 2 |
+| R | Pyroblast | Enemy within 4 **in LoS**: 6 dmg. | 4 |
+
+**Numbers re-checked with LoS: no change for now.** Her damage is not the outlier (time-to-kill 2 activations vs squishies,
+same as Blademaster and Shade; table below); the complaint is safe reach. LoS removes the shots that felt unfair (through
+jungle walls, river walls, the Twin Hollow pit walls) while open-lane trades stay the same. Frost Bridge has 2 wall hexes
+in the lane, so LoS barely matters there. Fallback if she still feels too safe after a playtest: **Pyroblast range 4 → 3**
+(then nothing she has out-ranges Frostbow's Attack). Listed in 16.4.
 
 ### Frostbow — Marksman · HP 10 · ATK 2 · RNG 3 · ARM 0 · SPD 3
 **Trait — Twin Shot:** your Attack action hits twice. MOBA reference: *frost-arrow marksman — kites with slows, long stun arrow.*
@@ -409,7 +461,23 @@ no shields/heals/teammates. Level 5 assumes the 3-item bot build.
 
 Reading: early fights take 2–3 activations (one round for a duo, so there is time to react or recall); tanks take
 twice as long; Frostbow is weak early and deletes squishies late — the marksman curve veterans expect. **Watch:**
-Frostbow one-shots a full-HP squishy at level 5 with 3 damage items (see 16.4).
+Frostbow one-shots a full-HP squishy at level 5 with 3 damage items (see 16.4). The table ignores geometry, so Pyra's LoS
+does not show here; it only removes targets, never damage.
+
+**Shade, r2 rules** (`python3 docs/design/sim/ttk.py`, `shade_report`): largest *current* HP Shade KOs in one activation
+(Shadow Step + best of Shuriken/Attack + Death Mark + execute), by execute rule:
+
+| Target (max HP) | v1.0-draft ≤ 4 | v0.3 35% | **20% (r2)** | 15% (alt) |
+|---|---|---|---|---|
+| L3 squishy (14) | 13 | 13 | **11** | 11 |
+| L3 Bulwark (20, ARM 2) | 12 | 15 | **12** | 11 |
+| L5 + items Pyra (20) | 20 | 23 | **20** | 19 |
+| L5 + items Frostbow (18) | 20 | 22 | **19** | 18 |
+| L5 + items Blademaster (29) | 20 | 26 | **21** | 20 |
+| L5 + items Bulwark (31, ARM 4) | 18 | 24 | **20** | 18 |
+
+Reading: 20% is a small nerf at level 3 (cannot one-activation a fresh squishy: 11 of 14) and keeps the level-5 "assassin
+deletes a full-HP carry" moment that Frostbow also has (16.4 #2). 15% removes that moment against Pyra (19 of 20).
 
 ---
 
@@ -476,7 +544,9 @@ The rules are designed so a bot can be a short list of scored plans instead of a
 |---|---|
 | `LegalActions(state, hero)` with a **preview** (damage, KOs, Front change, gold) for each | No bot-side re-implementation of rules; bots score previews. |
 | `LaneForecast(state, lane)`: Power each side, who wins the next clash, Front change, tower damage | One function answers "is my lane safe / should I push". |
-| `Threat(state, hex, team)`: max damage enemies can deal to that hex next activation, incl. tower dive rule | Retreat/recall decisions = one lookup. |
+| `Threat(state, hex, team)`: max damage enemies can deal to that hex next activation, incl. tower dive rule and Pyra's LoS | Retreat/recall decisions = one lookup. |
+| `HasLineOfSight(state, fromHex, toHex)` (section 3) | Bots hide behind walls from Pyra with one call; same function the UI uses. |
+| Previews flag Shadow Reset (`grantsAction: true`) | The bot plans Shade's 4th action without simulating the rule. |
 | Public state only: VP, round, levels, cooldowns, items, conditions, neutral HP and timers | No hidden info; bots and humans see the same. |
 | Seeded RNG stream for bot tie-breaks (separate from game RNG) | Same seed → same bot moves → replayable tests. |
 
@@ -528,7 +598,8 @@ ROUND 1 Start: +1 gold, level-ups.  2 Heroes alternate (trailing team picks who 
 YOUR TURN  3 actions, each once (Move may be twice):
       Move (SPD hexes) · Attack (ATK − armor) · Q / W / E / R (off cooldown) · [Capture altar]
       Free: Recall (ends turn; home next turn, full heal, cancelled by damage) · Shop (in base).
-      Frostbow: Attack hits twice.
+      Frostbow: Attack hits twice.   Shade: once per turn, Q/W/E KOs a hero, claims a neutral or wipes a wave → +1 action.
+LINE OF SIGHT  Pyra: everything needs a clear line to the target (hex). Walls block, units never do.
 DAMAGE  Attacks: ATK − ARM (min 1). Abilities: card number + POW, ignore armor. Shields soak first.
 CONDITIONS (your next turn)  Stun: 1 action · Root: no Move · Slow: SPD −2 · Silence: no abilities.
 LANE PHASE  Spawn 2 (3 from round 7) · Power = minions + your heroes within 2 of the Front ·
@@ -553,7 +624,8 @@ SHOP   3 slots · Basic 3 gold · Upgrade 7 (4 if you own its basic).
 - **Minutes** = rounds × (activation slots × seconds per slot + Lane phase). Seconds per activation: 45 s (expert) / 70 s
   (learning) for single activations; 55 s / 80 s per duo slot; Lane phase 15 s + 5 s per lane. These are estimates, not
   playtest data.
-- Not modelled: hex geometry (range, lines, body-blocking), the "no minion cover" tower shot, Hidden, Blink.
+- Not modelled: hex geometry (range, lines, body-blocking, **line of sight**), the "no minion cover" tower shot, Hidden, Blink,
+  Shadow Reset (pacing results predate r2; `ttk.py` covers Shade's burst).
 - Baseline: v0.3's own bot sim (`prototype-web/src/sim.js` engine, 30 games across maps/sizes): rounds 13–39,
   **26/30 reached overtime**.
 
@@ -600,6 +672,15 @@ SHOP   3 slots · Basic 3 gold · Upgrade 7 (4 if you own its basic).
    VP sooner, not later.
 5. **Dive shots** are rare in the sim (0.1–0.8 per match) because bots avoid them; the tower rule is untested under
    aggressive play.
+6. **Pyra range (playtest, Eddie):** felt overpowered in v0.3. r2 adds LoS, no number change. Test on The Rift jungle and
+   Twin Hollow pit. If still too safe: Pyroblast range 4 → 3. If LoS goes to all ranged heroes (Q11), re-check Frostbow
+   and Lumen too (they lose shots, Pyra's *relative* nerf shrinks).
+7. **Shade execute (playtest):** 35% → 20% of max HP (v1 rounding: ≤ 2 HP on a 14-HP squishy, ≤ 6 on a 31-HP tank).
+   Level 5 + items Shade still KOs a full-HP Frostbow/Pyra in one activation (table in section 10), same as Frostbow #2.
+   If that feels bad, test 15% (Q13) before touching her damage.
+8. **Shadow Reset:** capped at +1 action per activation; only hero KO / neutral claim / wave wipe. Watch: how often it
+   fires in lane (wave wipe) and whether double KOs in 3v3/4v4 teamfights feel like highlights or like a hard counter to
+   low-HP recall.
 
 ---
 
@@ -617,6 +698,9 @@ SHOP   3 slots · Basic 3 gold · Upgrade 7 (4 if you own its basic).
 | Q8 | **Denies** | (a) none *(draft)*; (b) Attack your own wave: kill 1 own minion, no gold, enemy can't last-hit it | **(a)** for v1.0; (b) is a veteran nicety that adds a rule. |
 | Q9 | **Frost Bridge recall** | (a) no recall, relics *(draft, genre-true)*; (b) recall like other maps | **(a)**; base still heals fully if you walk home, so Eddie's "base heals fully" holds everywhere. |
 | Q10 | **Tower dive damage** | (a) 3 flat *(draft)*; (b) 3, +1 at levels 3 and 5 | **(a)** until playtests show late dives are free. |
+| Q11 | **Who needs line of sight** (Pyra has it either way) | (a) Pyra only *(draft r2, matches the prototype patch)*: a hero trait; (b) every enemy-targeted ranged Attack and ability (RNG ≥ 2 or range ≥ 2), ally effects and globals (Mend, Barrier, Wish) exempt, Shadow Step keeps "ignores walls"; (c) everything that targets at range, allies included | **(b)**: one board rule is easier to learn than one hero's exception (goal 1), walls already stop Line abilities, and veterans expect walls to block shots. Cost: Frostbow and Lumen lose some shots; Pyra keeps the requested nerf as the longest-range caster. (a) is fine if Eddie wants LoS to be Pyra's identity. |
+| Q12 | **Shadow Reset trigger** | (a) hero KO, neutral claim, or wave wipe; once per activation *(draft r2)*; (b) any unit kill including a single last hit, once per activation (Eddie's literal wording; = 4 actions nearly every lane turn); (c) hero KOs only, uncapped (a reset per KO, cooldowns still limit her: at most Q and W can each KO once) | **(a)**: keeps the "kill → go again" moment on the plays that matter and stops the free farm-and-burst every round that (b) gives (+2/+4 burst, `ttk.py`). (c) is the purest assassin fantasy and cannot loop (2 resets max) but never fires in lane. |
+| Q13 | **Death Mark execute threshold** | (a) 20% of max HP, rounded down *(draft r2, prototype)*; (b) 15% | **(a)** first: at level 3 they are equal on squishies (≤ 2 HP); (b) only bites late (Pyra L5: 3 vs 4) and on tanks. Test (b) if the level-5 one-shot on carries feels unfair. |
 
 ---
 
@@ -648,6 +732,14 @@ SHOP   3 slots · Basic 3 gold · Upgrade 7 (4 if you own its basic).
 | Objectives | Drake +1 ATK/PWR team; Golem Aegis; Queen +2 for 8 rounds; altars +1 ATK/PWR & gold | Same identities + VP (2/3/3); altars give lane Power + gold | from Rum & Bones (VP) |
 | Frost Bridge | No recall, start lvl 3, 1100 gold, random heroes, overtime 16 | No recall, start lvl 3, 6 gold, random (seeded), 8 rounds | kept |
 | Heroes | 8 heroes, 4 abilities each, numbers in v0.3 scale | Same 8, same roles and ability identities, v1.0 numbers | kept, rescaled |
+| Line of sight | None (prototype patch after v0.3: Pyra needs LoS, walls only) | Defined for the hex board; Pyra needs it for everything (Q11: everyone?) | new (Eddie playtest) |
+| Shade execute | Hero left under 35% HP (prototype patch: 20%) | 20% of max HP, rounded down (≤ 2 HP on a 14-HP squishy); 15% to test | Eddie playtest |
+| Shade reset | None (prototype patch: Q/W kill of any unit clears her "acted" flag, no cap) | Q/W/E hero KO, neutral claim or wave wipe → +1 action, once per activation | Eddie playtest, capped |
+
+### 18.1 Revision r2 (Eddie's v0.3 playtest feedback)
+- Pyra: line of sight on every Attack and ability (section 3 rule, section 10). Numbers unchanged; fallback Pyroblast 3.
+- Shade: Death Mark execute 20% of max HP (15% alternative); Shadow Reset trait with a once-per-activation cap.
+- New open questions Q11–Q13. Quick reference, bots API (section 12) and hand-offs updated.
 
 ---
 
@@ -656,4 +748,11 @@ SHOP   3 slots · Basic 3 gold · Upgrade 7 (4 if you own its basic).
 - **BOTS:** plan-scoring bot over `LegalActions` previews (section 12); scripted Easy bot for the tutorial.
 - **ASSETS:** see the CHANGELOG "Needs" list (miniatures, board tiles, markers, tokens).
 - **UX:** HUD (hero card, VP/round bar, lane forecast arrows, tower range rings, damage previews), shop screen, tutorial (section 14), quick-reference card (section 15).
+- **UX (r2):** when Pyra is selected or an ability is aimed, the board shows **what she can see**: in-range hexes in LoS
+  highlighted, in-range hexes blocked by walls shaded/hatched, the sight line drawn to the hovered target, and "No line of
+  sight" in the preview instead of a damage number. Enemy view: hovering a hex shows whether Pyra can hit it (via Threat).
+  Shade: the action pips show a 4th "reset" pip when Shadow Reset fires; the Death Mark preview shows the execute
+  threshold ("executes at ≤ 2 HP") on the target's HP bar.
+- **CODE (r2):** `HasLineOfSight` with unit tests (edge-grazing lines, units not blocking), Pyra targeting filtered by it,
+  execute = maxHP / 5 integer division, Shadow Reset as an action-budget refund with a per-activation flag.
 - **NET:** duo turns (two clients acting at once), action log + seed replay, turn timers.

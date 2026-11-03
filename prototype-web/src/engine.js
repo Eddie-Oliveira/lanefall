@@ -136,16 +136,16 @@ const HEROES = {
       w: { n: 'Battle Cry', type: 'self', quick: 1, cd: 4, buff: { s: { atk: 2 }, dur: 2 }, mvNow: 1, d: 'Free action: +2 ATK this turn and next, and +1 move right now.', tip: 'Use it before moving to reach your target.' },
       e: { n: 'Decisive Strike', type: 'enemy', range: 1, cd: 3, dmg: { b: 3, atk: 1 }, silence: 1, d: 'A heavy hit that silences the target (no abilities) for 1 turn.', tip: 'Shut down a mage before they cast.' },
       r: { n: 'Omnislash', type: 'self', radius: 2, cd: 6, dmg: { b: 1, atk: .8 }, special: 'omni', d: 'Strike 4 times at random enemies within 2 tiles. Heroes are hit first when present.', tip: 'Best when one hero stands alone.' } } },
-  shade: { n: 'Shade', i: '🗡️', role: 'Assassin', hp: 30, atk: 5, rng: 1, mov: 4, arm: 0, res: 0, pwr: 1, g: { hp: 3, atk: 1, pwr: .3 },
-    about: 'Fragile killer. Appears from nowhere, executes a weakened hero, vanishes.',
+  shade: { n: 'Shade', i: '🗡️', role: 'Assassin', reset: 1, hp: 30, atk: 5, rng: 1, mov: 4, arm: 0, res: 0, pwr: 1, g: { hp: 3, atk: 1, pwr: .3 },
+    about: 'Fragile killer. When Shuriken or Shadow Step kills a unit, her action resets. Executes a weakened hero, then vanishes.',
     build: ['long_sword','boots','vamp','treads','blade','blink','guardian','hammer'],
     ab: {
       q: { n: 'Shuriken', type: 'line', range: 4, cd: 2, dmg: { b: 3, atk: .7 }, d: 'Throw a blade in a straight line; it hits the first enemy.', tip: 'Poke and last-hit from safety.' },
       w: { n: 'Shadow Step', type: 'dashEnemy', range: 4, cd: 3, dmg: { b: 2, atk: .5 }, d: 'Teleport next to an enemy up to 4 tiles away and strike it.', tip: 'Blink-strike. Walls do not stop it.' },
       e: { n: 'Smoke Veil', type: 'self', quick: 1, cd: 4, buff: { tag: 'veil', dur: 1 }, mvNow: 1, d: 'Free action: vanish and gain +1 move. Heroes and towers cannot target you until your next turn. Attacking reveals you.', tip: 'Stealth escape, or a sneaky approach.' },
-      r: { n: 'Death Mark', type: 'enemy', range: 1, cd: 6, dmg: { b: 5, atk: 1 }, special: 'execute', d: 'Strike an adjacent enemy. A hero left under 35% HP is executed outright.', tip: 'Finisher. Wait until they are low.' } } },
-  pyra: { n: 'Pyra', i: '🔥', role: 'Mage', hp: 28, atk: 2, rng: 2, mov: 3, arm: 0, res: 1, pwr: 5, g: { hp: 3, atk: .3, pwr: 1 },
-    about: 'Burst mage. Fireballs groups from range and deletes one target with her ultimate.',
+      r: { n: 'Death Mark', type: 'enemy', range: 1, cd: 6, dmg: { b: 5, atk: 1 }, special: 'execute', d: 'Strike an adjacent enemy. A hero left at or under 20% HP is executed outright.', tip: 'Finisher. Wait until they are low.' } } },
+  pyra: { n: 'Pyra', i: '🔥', role: 'Mage', los: 1, hp: 28, atk: 2, rng: 2, mov: 3, arm: 0, res: 1, pwr: 5, g: { hp: 3, atk: .3, pwr: 1 },
+    about: 'Burst mage. Fireballs groups from range and deletes one target with her ultimate. Needs line of sight: walls block her spells and attacks.',
     build: ['tome','boots','staff','mantle','treads','blink','guardian','ruby'],
     ab: {
       q: { n: 'Fireball', type: 'tile', range: 4, radius: 1, cd: 2, dmg: { b: 3, pwr: .8 }, mag: 1, d: 'Hurl a fireball at a 3×3 area up to 4 tiles away: magic damage to every enemy inside.', tip: 'Your farming and poke tool. Hit waves and heroes together.' },
@@ -402,7 +402,7 @@ function abHits(G, u, k, tx, ty, from) {
   switch (A.type) {
     case 'enemy': {
       const t = unitAt(G, tx, ty);
-      if (!targetable(G, u, t) || dist(P, t) > A.range) return null;
+      if (!targetable(G, u, t) || dist(P, t) > A.range || !losOk(u, P, t)) return null;
       if (A.special === 'gorge') {
         if (!(t.kind === 'minion' || (t.kind === 'neutral' && t.ntype === 'camp'))) return null;
         if (t.hp > 12 + 2 * stat(G, u, 'pwr')) return null;
@@ -432,7 +432,7 @@ function abHits(G, u, k, tx, ty, from) {
       break;
     }
     case 'tile': {
-      if (!inB(tx, ty) || dist(P, T) > A.range) return null;
+      if (!inB(tx, ty) || dist(P, T) > A.range || !losOk(u, P, T)) return null;
       R.area = { x: tx, y: ty, r: A.radius };
       for (const t of G.units) if (targetable(G, u, t) && dist(t, T) <= A.radius) R.hits.push(mk(t));
       break;
@@ -478,7 +478,7 @@ function abTargetTiles(G, u, k, from) {
     for (const [dx, dy] of D8) { let x = P.x, y = P.y; for (let i = 0; i < A.range; i++) { x += dx; y += dy; if (!inB(x, y) || isWall(x, y)) break; add(x, y); } }
     return out;
   }
-  if (A.type === 'tile') { for (let x = 0; x < W; x++) for (let y = 0; y < H; y++) if (dist(P, { x, y }) <= A.range && !isWall(x, y)) add(x, y); return out; }
+  if (A.type === 'tile') { for (let x = 0; x < W; x++) for (let y = 0; y < H; y++) if (dist(P, { x, y }) <= A.range && !isWall(x, y) && losOk(u, P, { x, y })) add(x, y); return out; }
   if (A.type === 'dash') { for (let x = 0; x < W; x++) for (let y = 0; y < H; y++) if (dist(P, { x, y }) <= A.range && dist(P, { x, y }) > 0 && freeAt(G, x, y, u)) add(x, y); return out; }
   for (const t of G.units) {
     if (!alive(t)) continue;
@@ -508,7 +508,7 @@ function applyAbility(G, u, k, tx, ty) {
     const d = h.dmg > 0 ? dealDamage(G, u, t, h.dmg, h.mag, { true: h.true }) : 0;
     total += d; if (t.kind === 'hero' && !names.includes(HEROES[t.hero].n)) names.push(HEROES[t.hero].n);
     if (!alive(t)) continue;
-    if (h.execute && t.kind === 'hero' && t.hp <= 0.35 * t.mhp) { t.hp = 0; killUnit(G, t, u); continue; }
+    if (h.execute && t.kind === 'hero' && t.hp <= EXECUTE * t.mhp) { t.hp = 0; killUnit(G, t, u); continue; }
     const cc = t.kind !== 'tower' && t.kind !== 'core';
     if (cc) {
       if (h.stun) t.st.stun = Math.max(t.st.stun, h.stun);
@@ -524,23 +524,38 @@ function applyAbility(G, u, k, tx, ty) {
     }
   }
   if (A.special === 'drain' && total > 0) heal(G, u, Math.round(total / 2));
+  const killed = R.hits.some(h => h.u.kind === 'hero' ? h.u.dead : h.u.hp <= 0);
+  let reset = false;
+  if (HEROES[u.hero].reset && k !== 'r' && !A.quick && killed) reset = true;
   if (A.special === 'rot') { u.hp = Math.max(1, u.hp - 1); }
   for (const he of R.heals) heal(G, he.u, he.amt);
   for (const s of R.shields) { if (!alive(s.u)) continue; s.u.shield = Math.min(25, (s.u.shield || 0) + s.amt); s.u.shieldT = 2; fx(G, { k: 'shield', x: s.u.x, y: s.u.y, v: s.amt }); }
   if (A.buff) { u.buffs = u.buffs.filter(b => !(A.buff.tag && b.tag === A.buff.tag)); u.buffs.push({ k, tag: A.buff.tag || null, s: A.buff.s || null, dur: A.buff.dur }); }
   if (A.mvNow) u.mv += A.mvNow;
   u.cd[k] = A.cd;
-  if (!A.quick) u.acted = true;
+  if (!A.quick && !reset) u.acted = true;
   let msg = `${HEROES[u.hero].n} used ${A.n}`;
   if (names.length) msg += ' on ' + names.join(', ');
   if (total) msg += ` for ${total}`;
+  if (reset) msg += '. The kill reset her action';
   log(G, msg, u.team);
   return null;
 }
 function canBasic(G, u, t, from) {
   const P = from || u;
-  return targetable(G, u, t) && dist(P, t) <= stat(G, u, 'rng');
+  return targetable(G, u, t) && dist(P, t) <= stat(G, u, 'rng') && losOk(u, P, t);
 }
+/* Line of sight: only terrain walls block (units do not). Sampled along the centre-to-centre line. */
+const EXECUTE = 0.2;
+function hasLOS(a, b) {
+  const dx = b.x - a.x, dy = b.y - a.y, n = Math.max(Math.abs(dx), Math.abs(dy)) * 8;
+  for (let i = 1; i < n; i++) {
+    const x = Math.round(a.x + dx * i / n), y = Math.round(a.y + dy * i / n);
+    if ((x !== a.x || y !== a.y) && (x !== b.x || y !== b.y) && isWall(x, y)) return false;
+  }
+  return true;
+}
+function losOk(u, P, T) { return !(u.kind === 'hero' && HEROES[u.hero].los) || hasLOS(P, T); }
 function basicDamage(G, u) {
   let d = stat(G, u, 'atk');
   if (hasBuff(u, 'totem')) d *= 2;
