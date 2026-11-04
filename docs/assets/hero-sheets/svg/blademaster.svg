@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="460" height="230" viewBox="0 0 460 230" font-family="sans-serif" font-size="11">
+<rect width="100%" height="100%" fill="#ebe3cc"/>
+<line x1="20" y1="196.0" x2="20" y2="31.0" stroke="#57544d" stroke-width="1"/>
+<line x1="16" y1="158.5" x2="24" y2="158.5" stroke="#57544d"/><text x="26" y="162.5" fill="#57544d" font-size="9">0.25 m</text>
+<line x1="16" y1="121.0" x2="24" y2="121.0" stroke="#57544d"/><text x="26" y="125.0" fill="#57544d" font-size="9">0.5 m</text>
+<line x1="16" y1="83.5" x2="24" y2="83.5" stroke="#57544d"/><text x="26" y="87.5" fill="#57544d" font-size="9">0.75 m</text>
+<line x1="16" y1="46.0" x2="24" y2="46.0" stroke="#57544d"/><text x="26" y="50.0" fill="#57544d" font-size="9">1 m</text>
+<line x1="48.0" y1="196.0" x2="242.0" y2="196.0" stroke="#57544d" stroke-dasharray="3 3"/>
+<rect x="85.0" y="184.0" width="120.0" height="12.0" fill="#2b3f43"/>
+<rect x="85.0" y="184.0" width="120.0" height="3.8" fill="#8cc8ff"/>
+<polygon points="124.0,143.8 143.5,143.8 133.0,184.0 118.0,184.0" fill="#2b3f43"/>
+<polygon points="146.5,143.8 166.0,143.8 172.0,184.0 157.0,184.0" fill="#2b3f43"/>
+<polygon points="124.0,146.8 166.0,146.8 173.5,104.8 116.5,104.8" fill="#2b3f43"/>
+<line x1="121.0" y1="107.8" x2="100.0" y2="100.0" stroke="#2b3f43" stroke-width="8.2" stroke-linecap="round"/>
+<circle cx="100.0" cy="100.0" r="5.3" fill="#2b3f43"/>
+<line x1="169.0" y1="107.8" x2="190.0" y2="100.0" stroke="#2b3f43" stroke-width="8.2" stroke-linecap="round"/>
+<circle cx="190.0" cy="100.0" r="5.3" fill="#2b3f43"/>
+<circle cx="145.0" cy="92.6" r="9.1" fill="#2b3f43"/>
+<line x1="70.0" y1="100.0" x2="220.0" y2="100.0" stroke="#8a7444" stroke-width="5.3" stroke-linecap="round"/>
+<rect x="208.0" y="92.5" width="3.8" height="13.5" fill="#8a7444"/>
+<line x1="133.0" y1="146.5" x2="130.0" y2="163.0" stroke="#c9c0a8" stroke-width="2.2" stroke-linecap="round"/>
+<line x1="145.0" y1="146.5" x2="145.0" y2="164.5" stroke="#c9c0a8" stroke-width="2.2" stroke-linecap="round"/>
+<line x1="157.0" y1="146.5" x2="160.0" y2="163.0" stroke="#c9c0a8" stroke-width="2.2" stroke-linecap="round"/>
+<text x="145.0" y="222" text-anchor="middle" fill="#0d1719">Blademaster · front</text>
+<line x1="258.0" y1="196.0" x2="452.0" y2="196.0" stroke="#57544d" stroke-dasharray="3 3"/>
+<rect x="295.0" y="184.0" width="120.0" height="12.0" fill="#2b3f43"/>
+<rect x="295.0" y="184.0" width="120.0" height="3.8" fill="#8cc8ff"/>
+<polygon points="347.5,143.8 362.5,143.8 370.0,184.0 355.0,184.0" fill="#2b3f43"/>
+<polygon points="347.5,143.8 362.5,143.8 352.0,184.0 337.0,184.0" fill="#2b3f43"/>
+<polygon points="340.3,146.8 369.7,146.8 372.7,104.8 337.3,104.8" fill="#2b3f43"/>
+<line x1="341.8" y1="107.8" x2="362.5" y2="100.0" stroke="#2b3f43" stroke-width="8.2" stroke-linecap="round"/>
+<circle cx="362.5" cy="100.0" r="5.3" fill="#2b3f43"/>
+<line x1="368.2" y1="107.8" x2="347.5" y2="100.0" stroke="#2b3f43" stroke-width="8.2" stroke-linecap="round"/>
+<circle cx="347.5" cy="100.0" r="5.3" fill="#2b3f43"/>
+<circle cx="355.0" cy="92.6" r="9.1" fill="#2b3f43"/>
+<line x1="340.0" y1="109.0" x2="370.0" y2="91.0" stroke="#8a7444" stroke-width="5.3" stroke-linecap="round"/>
+<line x1="346.0" y1="91.0" x2="334.0" y2="133.0" stroke="#2b3f43" stroke-width="3.0" stroke-linecap="round"/>
+<text x="355.0" y="222" text-anchor="middle" fill="#0d1719">Blademaster · side (facing right)</text>
+<text x="450" y="14" text-anchor="end" fill="#57544d" font-size="9">size M · 0.75 m · base Ø 0.80 m · rim shown Azure</text>
+</svg>
