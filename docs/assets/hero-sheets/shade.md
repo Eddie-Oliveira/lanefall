@@ -30,7 +30,7 @@ Crescent sickle-knife (left hand); moth-wing throwing discs (one in the right ha
 | Dusk lilac lining | `#7a6c8a` |
 | Pale moth-dust trim | `#e9e2cf` |
 | Dark steel knife | `#4a4e52` |
-| Team mask: hat band + sash | Azure `#8cc8ff` / Ember `#c4402a` via mask B |
+| Team mask: hat band + sash | Azure `#2F7FE8` / Ember `#F5A030` via mask B |
 
 ## What must read at 3 cm (default 55° camera, phone screen)
 1. Wide flat hat disc

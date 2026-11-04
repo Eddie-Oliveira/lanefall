@@ -30,7 +30,7 @@ Long-barrelled rifle (1.0 m) with a brass spyglass scope and a bipod; powder-cha
 | Gunmetal barrel | `#4a4e52` |
 | Walnut stock | `#5a3a24` |
 | Brass scope / visor | `#d6a748` |
-| Team mask: armband + cap band | Azure `#8cc8ff` / Ember `#c4402a` via mask B |
+| Team mask: armband + cap band | Azure `#2F7FE8` / Ember `#F5A030` via mask B |
 
 ## What must read at 3 cm (default 55° camera, phone screen)
 1. Tall vertical rifle

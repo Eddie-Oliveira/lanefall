@@ -30,7 +30,7 @@ Hooked lamplighter's pole (1.05 m) with a hanging glass lantern; a satchel of wi
 | Plum stole | `#4d2f45` |
 | Brass lantern frame | `#d6a748` |
 | Warm light (emissive 1.2) | `#ffe08a` |
-| Team mask: stole tassels + lantern ribbon | Azure `#8cc8ff` / Ember `#c4402a` via mask B |
+| Team mask: stole tassels + lantern ribbon | Azure `#2F7FE8` / Ember `#F5A030` via mask B |
 
 ## What must read at 3 cm (default 55° camera, phone screen)
 1. Hanging lantern on a hooked pole

@@ -30,7 +30,7 @@ Tall pavise (0.62 m) with a round mirror boss; short square-headed warhammer.
 | Oxblood leather / coat | `#5a2a22` |
 | Pavise wood | `#6b5136` |
 | Mirror boss (near white-gold, slight emissive 0.2) | `#f4ead0` |
-| Team mask: pennant hanging from the pavise top + helm plume | Azure `#8cc8ff` / Ember `#c4402a` via mask B |
+| Team mask: pennant hanging from the pavise top + helm plume | Azure `#2F7FE8` / Ember `#F5A030` via mask B |
 
 ## What must read at 3 cm (default 55° camera, phone screen)
 1. Pavise shape (a tall rectangle in front of the mini)

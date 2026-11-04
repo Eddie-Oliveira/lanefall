@@ -30,7 +30,7 @@ Long two-hand sword (1.0 m, straight double edge, wide crossguard), worn across 
 | Olive trousers / straps | `#4b5236` |
 | Blade steel | `#c9ced2` |
 | Grey hair | `#b9b4ab` |
-| Team mask: belt ribbons + sword-grip wrap | Azure `#8cc8ff` / Ember `#c4402a` via mask B |
+| Team mask: belt ribbons + sword-grip wrap | Azure `#2F7FE8` / Ember `#F5A030` via mask B |
 
 ## What must read at 3 cm (default 55° camera, phone screen)
 1. Horizontal sword across the shoulders

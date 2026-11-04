@@ -30,7 +30,7 @@ Recurve bow of spiral horn (1.0 m tall); quiver of crystal arrows; ice axe at th
 | Snow fur | `#e6e2d8` |
 | Horn bow | `#d9cfae` |
 | Crystal arrows (emissive 0.4) | `#bfeaf2` |
-| Team mask: hat earflap ties + scarf | Azure `#8cc8ff` / Ember `#c4402a` via mask B |
+| Team mask: hat earflap ties + scarf | Azure `#2F7FE8` / Ember `#F5A030` via mask B |
 
 ## What must read at 3 cm (default 55° camera, phone screen)
 1. Tall bow arc

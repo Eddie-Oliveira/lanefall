@@ -30,7 +30,7 @@ His horn (natural weapon); iron bands and a thorny bramble collar; a cloth banne
 | Moss | `#6d8a3c` |
 | Iron bands | `#5e6266` |
 | Horn ivory | `#d8cdb0` |
-| Team mask: cloth tied round the horn | Azure `#8cc8ff` / Ember `#c4402a` via mask B |
+| Team mask: cloth tied round the horn | Azure `#2F7FE8` / Ember `#F5A030` via mask B |
 
 ## What must read at 3 cm (default 55° camera, phone screen)
 1. Single big horn

@@ -30,7 +30,7 @@ Iron blowpipe-staff (1.0 m) with a glowing molten glass bulb (Ø 0.12 m); shears
 | Soot-grey dress | `#3a3836` |
 | Molten glass (emissive 1.5) | `#ffb347` |
 | Brass goggles | `#d6a748` |
-| Team mask: headscarf | Azure `#8cc8ff` / Ember `#c4402a` via mask B |
+| Team mask: headscarf | Azure `#2F7FE8` / Ember `#F5A030` via mask B |
 
 ## What must read at 3 cm (default 55° camera, phone screen)
 1. Glowing bulb on the staff

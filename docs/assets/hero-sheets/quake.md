@@ -30,7 +30,7 @@ Stone tuning-fork maul (0.80 m; two prongs, iron-bound handle); chisels on the h
 | Ochre dust / cracks (emissive 0.2 on cracks) | `#b98a4a` |
 | Fork stone | `#7d7a70` |
 | Harness leather | `#5a3e28` |
-| Team mask: belt cloth + handle wrap | Azure `#8cc8ff` / Ember `#c4402a` via mask B |
+| Team mask: belt cloth + handle wrap | Azure `#2F7FE8` / Ember `#F5A030` via mask B |
 
 ## What must read at 3 cm (default 55° camera, phone screen)
 1. Two-pronged fork over the shoulder

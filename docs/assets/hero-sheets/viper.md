@@ -30,7 +30,7 @@ Two curved bone-fang daggers (backhand grip); bandolier of glass vials; the live
 | Bone daggers | `#e2d6b6` |
 | Acid-green vials (emissive 0.3) | `#9bd44a` |
 | Snake bronze bands on dark olive | `#8a6d3b` |
-| Team mask: wrist wraps + braid tie | Azure `#8cc8ff` / Ember `#c4402a` via mask B |
+| Team mask: wrist wraps + braid tie | Azure `#2F7FE8` / Ember `#F5A030` via mask B |
 
 ## What must read at 3 cm (default 55° camera, phone screen)
 1. Snake head rearing next to her head

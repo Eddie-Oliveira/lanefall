@@ -30,7 +30,7 @@ Tall staff (1.1 m) topped with a 3-cup brass anemometer and a small weathervane 
 | Ochre lining | `#b08d3a` |
 | Brass instruments | `#d6a748` |
 | Lightning VFX accent | `#c9b6ff` |
-| Team mask: kite-tail bows | Azure `#8cc8ff` / Ember `#c4402a` via mask B |
+| Team mask: kite-tail bows | Azure `#2F7FE8` / Ember `#F5A030` via mask B |
 
 ## What must read at 3 cm (default 55° camera, phone screen)
 1. Anemometer cups at the top of the staff

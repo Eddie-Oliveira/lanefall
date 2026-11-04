@@ -30,7 +30,7 @@ Double-bitted felling axe on a long birch haft (0.75 m); logging chains.
 | Plaid dark stripe | `#1d1d1a` |
 | Birch haft | `#d8cfb8` |
 | Axe iron | `#6d7072` |
-| Team mask: rag tied on the haft + plaid thin stripe | Azure `#8cc8ff` / Ember `#c4402a` via mask B |
+| Team mask: rag tied on the haft + plaid thin stripe | Azure `#2F7FE8` / Ember `#F5A030` via mask B |
 
 ## What must read at 3 cm (default 55° camera, phone screen)
 1. Diagonal axe across the body

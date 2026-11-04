@@ -7,7 +7,7 @@
 <line x1="16" y1="46.0" x2="24" y2="46.0" stroke="#57544d"/><text x="26" y="50.0" fill="#57544d" font-size="9">1 m</text>
 <line x1="48.0" y1="196.0" x2="242.0" y2="196.0" stroke="#57544d" stroke-dasharray="3 3"/>
 <rect x="85.0" y="184.0" width="120.0" height="12.0" fill="#2b3f43"/>
-<rect x="85.0" y="184.0" width="120.0" height="3.8" fill="#8cc8ff"/>
+<rect x="85.0" y="184.0" width="120.0" height="3.8" fill="#2F7FE8"/>
 <polygon points="121.0,134.8 143.5,134.8 130.0,184.0 115.0,184.0" fill="#2b3f43"/>
 <polygon points="146.5,134.8 169.0,134.8 175.0,184.0 160.0,184.0" fill="#2b3f43"/>
 <polygon points="121.0,137.8 169.0,137.8 179.5,86.4 110.5,86.4" fill="#2b3f43"/>
@@ -24,7 +24,7 @@
 <text x="145.0" y="222" text-anchor="middle" fill="#0d1719">Bulwark · front</text>
 <line x1="258.0" y1="196.0" x2="452.0" y2="196.0" stroke="#57544d" stroke-dasharray="3 3"/>
 <rect x="295.0" y="184.0" width="120.0" height="12.0" fill="#2b3f43"/>
-<rect x="295.0" y="184.0" width="120.0" height="3.8" fill="#8cc8ff"/>
+<rect x="295.0" y="184.0" width="120.0" height="3.8" fill="#2F7FE8"/>
 <polygon points="347.5,134.8 362.5,134.8 370.0,184.0 355.0,184.0" fill="#2b3f43"/>
 <polygon points="347.5,134.8 362.5,134.8 352.0,184.0 337.0,184.0" fill="#2b3f43"/>
 <polygon points="338.2,137.8 371.8,137.8 376.4,86.4 333.6,86.4" fill="#2b3f43"/>

@@ -30,7 +30,7 @@ Iron harpoon-hook on a chain that runs to a back-mounted hand winch; filleting k
 | Rust iron (hook, chain, winch bands) | `#8a4b2a` |
 | Salt-stained apron | `#c9c0a8` |
 | Weathered skin | `#c79a7a` |
-| Team mask: neckerchief + winch-handle wrap | Azure `#8cc8ff` / Ember `#c4402a` via mask B |
+| Team mask: neckerchief + winch-handle wrap | Azure `#2F7FE8` / Ember `#F5A030` via mask B |
 
 ## What must read at 3 cm (default 55° camera, phone screen)
 1. Hook raised above the head

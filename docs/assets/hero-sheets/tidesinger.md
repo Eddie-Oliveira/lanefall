@@ -30,7 +30,7 @@ Large conch horn (raised to the lips); wading staff with a net of 5 glass floats
 | Sea-glass green shawl | `#3f8a7e` |
 | Coral beads | `#e08b7a` |
 | Glass floats (translucent look, painted) | `#9fd3c7` |
-| Team mask: head wrap + float-net cord | Azure `#8cc8ff` / Ember `#c4402a` via mask B |
+| Team mask: head wrap + float-net cord | Azure `#2F7FE8` / Ember `#F5A030` via mask B |
 
 ## What must read at 3 cm (default 55° camera, phone screen)
 1. Conch horn at the mouth

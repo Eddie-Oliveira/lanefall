@@ -58,28 +58,41 @@ things on screen. Value structure: dark table → mid board → light-edged hero
 ### 3.2 Team colors — colorblind-safe by value **and** pattern
 
 The prototype's Azure `#56a8ff` (L\* 67) and Ember `#ff6d4d` (L\* 64) differ in hue only; under deuteranopia Ember turns
-olive-yellow at almost the same lightness. v1 3D separates them by **value** and by **shape**, so hue is a third,
-redundant cue.
+olive at almost the same lightness, and red-orange on a green board is the worst case for protan/deutan players.
+**Adopted: the UX palette and second cues from `docs/ux/ACCESSIBILITY.md` §1.1** (one palette for UI and 3D), with
+3D-specific rules below. Teams are separated by hue (blue vs amber, the pair that survives all three common CVDs),
+by **value** and by **shape**.
 
-| Team | Main (rim, banner) | Shade | Highlight | L\* main | Deuteranopia / protanopia / tritanopia (sim L\*) |
+| Team | Main (rim, banner, UI) | Shade (outline, cloth folds) | Highlight | L\* main | Deutan / protan / tritan (sim L\*) |
 |---|---|---|---|---|---|
-| **Azure** | `#8cc8ff` (light sky) | `#2f5f9e` | `#d6ecff` | 78.5 | 76.9 / 81.0 / 79.0 |
-| **Ember** | `#c4402a` (deep brick) | `#6e1f14` | `#f08a62` | 46.4 | 50.6 / 38.9 / 46.3 |
+| **Azure** | `#2F7FE8` blue | `#1a4f9c` | `#9cc6ff` | 53.6 | 51.1 / 57.4 / 57.4 |
+| **Ember** | `#F5A030` amber | `#a8661a` | `#ffd28a` | 72.7 | 75.3 / 68.3 / 70.6 |
+| Neutral monsters | `#D9D4C7` bone white | `#8f8a7d` | — | 85.0 | (unchanged) |
 
-(Machado 2009 severity-1.0 simulation; ΔL\* ≥ 26 in every case, so the teams separate even in greyscale.)
+(Machado 2009, severity 1.0. Ember is the **lighter** team, Azure the **deeper** one; UX measured ΔE 106–133 between
+them in all modes.)
 
-**Rule: Azure is the light team, Ember is the dark team.** Azure rims, banners and HP bars are light with dark
-outlines; Ember's are deep with light outlines. UI uses the same two values (UX: see CHANGELOG Needs).
+**3D rules for team color:**
+- Team color is **always framed by a dark edge**: rims sit on the black-brown base side (`#1b1714`) and banners have a
+  `table-ink` hem, so contrast never depends on the tile behind (Azure on grey stone alone is only ~1.1 : 1; on the dark
+  base edge it is > 4 : 1). Rims carry emissive 0.15 so they read in shadow.
+- Tile albedo stays at **L\* ≤ 50** for turf and stone (snow tiles are the exception; there the dark base edge does the work).
+- No hero, tile or neutral uses a large area of team blue or team amber; amber-ish hero VFX (Pyra's molten glass) are
+  emissive and short-lived, and never on the base.
 
-**Shape cues (always present, never optional):**
+**Shape cues (always present, never optional; these match ACCESSIBILITY 1.1–1.2):**
 | Element | Azure | Ember |
 |---|---|---|
-| **Hero base rim** | **"Ripple"**: three raised concentric bands, smooth | **"Crown"**: 12 square merlons (notches) around the rim |
-| Team emblem (banners, UI, minion shields, structure plaques) | **Circle** with a wave line through it | **Upward triangle** with a notch (flame) |
-| Minion shields | Round | Kite/pointed |
+| Team emblem (banners, UI, minion shields, structure plaques, Front flag, coin) | **Diamond ◆** | **Triangle ▲** |
+| **Hero base rim** (separate mesh) | **Solid band + 6 diamond notches** | **Sawtooth (flame) edge**, 12 teeth |
+| Cloth pattern (banners, tabards, team pennant on heroes, ground ring decal) | **Horizontal bands** | **Diagonal hatching, 45°** |
+| Minion shields (silhouette) | Round with a ◆ boss | Kite/pointed with a ▲ boss |
 | Tower and Core silhouette | Round towers, domed caps | Square towers, pointed hip-roof caps |
 | Banners / pennants | Square-cut | Swallow-tail |
 | Front marker flag | Shows the emblem of the side the Front has pushed toward (see ASSETS.md) | |
+
+**"My team is always blue"** (UX option): `TeamTint` takes the *displayed* team, so the swap is one call; meshes for
+both rim shapes ship with every hero prefab.
 
 Heroes are drafted into either team, so a **hero's body is never team-colored**. Team shows on: the base rim, a small
 cloth **team pennant or sash** on every mini (masked area, color swapped by material; see PIPELINE §6), and a ground decal
@@ -93,7 +106,7 @@ ring under the base. Hero paint avoids large areas of pure Azure or Ember hue; w
 | Bad / damage | `#ff5a5a` | sharp burst |
 | Shield | `#f1d083` (brass-hi) | hex dome / shield outline |
 | Poison | `#9bd44a` | droplet |
-| Neutral objectives | `#b48ad8` (violet) | diamond |
+| Neutral monsters / objectives | `#D9D4C7` (bone white) | dotted ring + creature icon |
 
 ## 4. Materials (URP Lit, stylized)
 
@@ -103,7 +116,7 @@ can batch them.
 | Material family | Look | Settings |
 |---|---|---|
 | **Painted mini** (heroes, minions, neutrals) | Hand-painted albedo with baked edge highlights and recess wash; satin varnish | Metallic 0 (painted metal is *painted*, not metallic) except real-metal accents ≤ 0.6; Smoothness 0.25–0.4; normal map soft; **edge-highlight boost** from a curvature channel; **team mask** recolors the pennant/sash |
-| **Base** | Painted black-brown base with flock/sand top, team rim | Rim color + rim pattern are separate meshes (Azure ripple / Ember crown); rim gets a faint emissive 0.15 so it reads in shadow |
+| **Base** | Painted black-brown base with flock/sand top, team rim | Rim color + rim pattern are separate meshes (Azure band + diamond notches / Ember sawtooth); rim gets a faint emissive 0.15 so it reads in shadow |
 | **Board tiles** | Crafted terrain: chunky stone, flocked turf, painted snow | Trim-sheet + tileable atlas per map; slight per-tile tint jitter via vertex color so the board doesn't look tiled |
 | **River resin** | Glossy "poured resin" water | Smoothness 0.9, depth gradient in albedo, slow normal scroll; no real refraction (mobile) |
 | **Structures** | Carved stone + brass fittings + team cloth | Brass = metallic 0.8, smoothness 0.55; damaged states swap meshes, not shaders |
@@ -146,7 +159,7 @@ UI belongs to the UX agent (`unity/Assets/UI/`, UI Toolkit); art supplies icons 
 - Frames: dark `panel` cards with a thin `brass` bevel, corner rivets; parchment text.
 - Icons: **flat-painted, 2-tone + outline** on a transparent background, 256 px master, readable at 32 px. One light
   direction (top-left) matches the board lamp. Condition and team icons follow the shape table above.
-- Team in UI: Azure = light fill + dark text; Ember = dark fill + light text; both carry the emblem.
+- Team in UI: owned by UX (`docs/ux/ACCESSIBILITY.md` §1): "emblem + name" (◆ Azure, ▲ Ember), same hex values as above.
 
 ## 8. VFX language
 
@@ -157,7 +170,7 @@ UI belongs to the UX agent (`unity/Assets/UI/`, UI Toolkit); art supplies icons 
 | **Ability** (ignores ARM) | The hero's element (table below), larger and slower than an Attack | hero element color | Number in element color with a rune frame |
 | **Poison tick** | Green bubbles rise from the base, droplet drips | `#9bd44a` | Green number + droplet |
 | **Structure shot** (tower dive / no cover) | Brass bolt arcs from the tower crown | brass `#f1d083` | Brass number + tower icon |
-| **Neutral Bite** | Claw slash decal | violet `#b48ad8` | Violet number |
+| **Neutral Bite** | Claw slash decal | bone white `#D9D4C7` | Bone-white number with a dotted outline |
 | **Heal** | Rising motes + soft upward ring | `#6fd38e` | Green "+n" |
 | **Shield absorb** | Hex-plate dome flashes and cracks | brass-hi | Brass number struck through |
 
@@ -185,6 +198,7 @@ Token shape alone identifies it (colorblind-safe); icon inside; pips for duratio
 | **Steadfast** | **Plain grey ring** around the whole base (not a chip) | None (calm) | Can't be stunned |
 | **Hidden** (state) | **Crescent** chip, smoke grey | Mini becomes dithered smoky glass | Untargetable |
 | **Haste** (buff) | **Arrow-wing** chip, pale green | Wind streaks behind the mini when it moves | +2 SPD |
+| **Recalling** (state) | **Arch** chip (hearth doorway), brass | Soft hearth-light column; cracks and drops if cancelled | Arrives at the Fountain next turn |
 | **Aegis** (item-like) | **Laurel ring** of brass on the base | Slow golden glint | Revives once |
 
 Token animation: a token **drops in** with a small bounce when applied and **flicks off** when it expires — the board
