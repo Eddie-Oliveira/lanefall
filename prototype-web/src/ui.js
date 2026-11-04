@@ -399,7 +399,7 @@ function myDraftTurn() {
 }
 function heroDetail(k) {
   const d = HEROES[k];
-  const traits = [d.freeAttack ? 'First basic attack each turn is free.' : '', d.los ? 'Needs line of sight.' : '', d.reset ? 'Skill kills reset her action.' : ''].filter(Boolean).join(' ');
+  const traits = [d.freeAttack ? 'First basic attack each turn is free.' : '', d.reset ? 'Skill kills reset her action.' : ''].filter(Boolean).join(' ');
   return `<div class="dhead"><span class="dic">${d.i}</span><div><h3>${d.n}</h3><div class="lvl">${d.role}${EASY.has(k) ? ' · easy' : ''} · HP ${d.hp} · ATK ${d.atk} · RNG ${d.rng} · MOV ${d.mov}</div></div></div>
     <p class="note" style="margin:0">${esc(d.about)}${traits ? ' <b>' + esc(traits) + '</b>' : ''}</p>
     <div class="dab">${AB_KEYS.map(a => `<div><b>${a.toUpperCase()} · ${esc(d.ab[a].n)}</b>${d.ab[a].quick ? ' <span class="chip" style="color:var(--good);border-color:var(--good)">free</span>' : ''}<br><span class="note">${esc(d.ab[a].d)}</span></div>`).join('')}</div>`;
@@ -904,7 +904,7 @@ function openRules() {
     <div><h3>Gold and levels</h3><ul><li>Last-hit minions (20–28 gold), wolves (45), heroes (100+). Everyone gets 15 gold a round.</li><li>XP comes from minions dying near you, kills and objectives. Max level 6.</li><li>Shop in your base or while dead. Standing in your own base heals you to full right away (recall, walk in or respawn).</li></ul></div>
     <div><h3>Towers</h3><ul><li>Towers shoot minions first.</li><li><b>Tower aggro:</b> if you hit an enemy hero while standing in a tower's range, it shoots you.</li><li>Let your minion wave walk in first, then hit the tower.</li></ul></div>
     <div><h3>Jungle and river</h3><ul><li>Wolf camps give gold and XP to the killer.</li><li>Ancient Drake: +1 ATK and PWR for your whole team, permanently.</li><li>Stone Golem: the killer gets the Aegis, a free revive.</li></ul></div>
-    <div><h3>Damage</h3><ul><li>Physical damage is reduced by ARM, magic by RES (minimum 1).</li><li>Pyra needs line of sight: walls block her attacks and spells. Units don't.</li><li>Stun skips a turn. Root stops movement. Slow is −1 MOV. Silence blocks abilities.</li><li>Recall any time during your turn. It ends that hero's turn; you teleport home at the start of your next turn unless you take damage.</li><li>Marksmen get one free basic attack per turn on top of their action.</li></ul></div>
+    <div><h3>Damage</h3><ul><li>Physical damage is reduced by ARM, magic by RES (minimum 1).</li><li>Line of sight: walls block every ranged attack or ability aimed at an enemy (range 2 or more). Units don't block. Heals, shields and map-wide effects ignore walls.</li><li>Stun skips a turn. Root stops movement. Slow is −1 MOV. Silence blocks abilities.</li><li>Recall any time during your turn. It ends that hero's turn; you teleport home at the start of your next turn unless you take damage.</li><li>Marksmen get one free basic attack per turn on top of their action.</li></ul></div>
     <div><h3>Controls</h3><ul><li>Click a gold tile to move, a red-ringed enemy to attack.</li><li><kbd>Q</kbd><kbd>W</kbd><kbd>E</kbd><kbd>R</kbd> abilities, <kbd>A</kbd> attack, <kbd>B</kbd> recall, <kbd>S</kbd> shop, <kbd>Space</kbd> end turn, <kbd>Tab</kbd> next hero, <kbd>Esc</kbd> cancel.</li></ul></div>
   </div>`);
 }

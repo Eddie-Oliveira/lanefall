@@ -428,8 +428,8 @@ const HEROES = {
       w: { n: 'Shadow Step', type: 'dashEnemy', range: 4, cd: 3, dmg: { b: 2, atk: .5 }, d: 'Teleport next to an enemy up to 4 tiles away and strike it.', tip: 'Blink-strike. Walls do not stop it.' },
       e: { n: 'Smoke Veil', type: 'self', quick: 1, cd: 4, buff: { tag: 'veil', dur: 1 }, mvNow: 1, d: 'Free action: vanish and gain +1 move. Heroes and towers cannot target you until your next turn. Attacking reveals you.', tip: 'Stealth escape, or a sneaky approach.' },
       r: { n: 'Death Mark', type: 'enemy', range: 1, cd: 6, dmg: { b: 5, atk: 1 }, special: 'execute', d: 'Strike an adjacent enemy. A hero left at or under 20% HP is executed outright.', tip: 'Finisher. Wait until they are low.' } } },
-  pyra: { n: 'Pyra', i: '🔥', role: 'Mage', los: 1, hp: 28, atk: 2, rng: 2, mov: 3, arm: 0, res: 1, pwr: 5, g: { hp: 3, atk: .3, pwr: 1 },
-    about: 'Burst mage. Fireballs groups from range and deletes one target with her ultimate. Needs line of sight: walls block her spells and attacks.',
+  pyra: { n: 'Pyra', i: '🔥', role: 'Mage', hp: 28, atk: 2, rng: 2, mov: 3, arm: 0, res: 1, pwr: 5, g: { hp: 3, atk: .3, pwr: 1 },
+    about: 'Burst mage. Fireballs groups from range and deletes one target with her ultimate.',
     build: ['tome','boots','staff','mantle','treads','blink','guardian','ruby'],
     ab: {
       q: { n: 'Fireball', type: 'tile', range: 4, radius: 1, cd: 2, dmg: { b: 3, pwr: .8 }, mag: 1, d: 'Hurl a fireball at a 3×3 area up to 4 tiles away: magic damage to every enemy inside.', tip: 'Your farming and poke tool. Hit waves and heroes together.' },
@@ -478,16 +478,16 @@ const HEROES = {
       w: { n: 'Toxic Cloud', type: 'tile', range: 3, radius: 1, cd: 3, slow: 1, burn: { b: 1, pwr: .3, t: 2 }, d: 'Release a 3×3 cloud up to 3 tiles away: poison and slow everything inside.', tip: 'Great on a minion wave with a hero in it.' },
       e: { n: 'Slither', type: 'dash', range: 3, quick: 1, cd: 3, d: 'Free action: slide to a free tile up to 3 away.', tip: 'Escape after the bite, or close the gap first.' },
       r: { n: 'Kiss of Death', type: 'enemy', range: 2, cd: 6, dmg: { b: 4, pwr: 1 }, mag: 1, silence: 1, burn: { b: 3, pwr: .5, t: 3 }, d: 'Magic damage to an enemy up to 2 away, silence it for 1 turn and poison it heavily for 3 turns.', tip: 'Silence the healer or the mage before the fight.' } } },
-  stormcaller: { n: 'Stormcaller', i: '⚡', role: 'Mage', los: 1, hp: 28, atk: 2, rng: 2, mov: 3, arm: 0, res: 1, pwr: 4, g: { hp: 3, atk: .3, pwr: 1 },
-    about: 'Control mage. Chains lightning between enemies and blows divers away. Needs line of sight.',
+  stormcaller: { n: 'Stormcaller', i: '⚡', role: 'Mage', hp: 28, atk: 2, rng: 2, mov: 3, arm: 0, res: 1, pwr: 4, g: { hp: 3, atk: .3, pwr: 1 },
+    about: 'Control mage. Chains lightning between enemies and blows divers away.',
     build: ['tome','boots','mantle','staff','treads','veil','guardian','ruby'],
     ab: {
       q: { n: 'Chain Lightning', type: 'enemy', range: 3, cd: 2, dmg: { b: 2, pwr: .7 }, mag: 1, special: 'chain', d: 'Strike an enemy up to 3 away; the bolt jumps to up to 2 more enemies within 2 tiles of the last one (70% damage).', tip: 'Best into a crowd of minions with a hero inside.' },
       w: { n: 'Static Field', type: 'tile', range: 3, radius: 1, cd: 4, dmg: { b: 1, pwr: .4 }, mag: 1, silence: 1, d: 'Charge a 3×3 area up to 3 tiles away: magic damage and silence 1 turn.', tip: 'Stops their whole team from casting.' },
       e: { n: 'Gust', type: 'line', range: 3, cd: 3, dmg: { b: 1, pwr: .3 }, mag: 1, knock: 2, d: 'A blast of wind in a straight line. The first enemy hit takes damage and is knocked back 2 tiles.', tip: 'Push a diver off you, or into your tower.' },
       r: { n: 'Thunderstorm', type: 'tile', range: 4, radius: 2, cd: 6, dmg: { b: 4, pwr: 1 }, mag: 1, d: 'Call a storm on a 5×5 area up to 4 tiles away: heavy magic damage to every enemy inside.', tip: 'Wait until they group up for the drake.' } } },
-  deadeye: { n: 'Deadeye', i: '🎯', role: 'Marksman', freeAttack: 1, los: 1, hp: 26, atk: 5, rng: 4, mov: 3, arm: 0, res: 0, pwr: 1, g: { hp: 3, atk: 1, pwr: .3 },
-    about: 'Sniper with the longest range. First basic attack each turn is free. Needs line of sight.',
+  deadeye: { n: 'Deadeye', i: '🎯', role: 'Marksman', freeAttack: 1, hp: 26, atk: 5, rng: 4, mov: 3, arm: 0, res: 0, pwr: 1, g: { hp: 3, atk: 1, pwr: .3 },
+    about: 'Sniper with the longest range. First basic attack each turn is free.',
     build: ['long_sword','boots','blade','treads','vamp','guardian','hammer','plate'],
     ab: {
       q: { n: 'Piercing Shot', type: 'line', range: 5, pierce: 1, cd: 3, dmg: { b: 1, atk: .8 }, d: 'A shot in a straight line (5 tiles) that hits every enemy on it.', tip: 'Line up the wave and the hero behind it.' },
@@ -737,7 +737,7 @@ function abHits(G, u, k, tx, ty, from) {
   switch (A.type) {
     case 'enemy': {
       const t = unitAt(G, tx, ty);
-      if (!targetable(G, u, t) || dist(P, t) > A.range || !losOk(u, P, t)) return null;
+      if (!targetable(G, u, t) || dist(P, t) > A.range || !losOk(u, P, t, A.range)) return null;
       if (A.special === 'gorge') {
         if (!(t.kind === 'minion' || (t.kind === 'neutral' && t.ntype === 'camp'))) return null;
         if (t.hp > 12 + 2 * stat(G, u, 'pwr')) return null;
@@ -775,7 +775,7 @@ function abHits(G, u, k, tx, ty, from) {
       break;
     }
     case 'tile': {
-      if (!inB(tx, ty) || isWall(tx, ty) || dist(P, T) > A.range || !losOk(u, P, T)) return null;
+      if (!inB(tx, ty) || isWall(tx, ty) || dist(P, T) > A.range || !losOk(u, P, T, A.range)) return null;
       R.area = { x: tx, y: ty, r: A.radius };
       for (const t of G.units) if (targetable(G, u, t) && dist(t, T) <= A.radius) R.hits.push(mk(t));
       break;
@@ -831,7 +831,7 @@ function abTargetTiles(G, u, k, from) {
     for (const [dx, dy] of D8) { let x = P.x, y = P.y; for (let i = 0; i < A.range; i++) { x += dx; y += dy; if (!inB(x, y) || isWall(x, y)) break; add(x, y); } }
     return out;
   }
-  if (A.type === 'tile') { for (let x = 0; x < W; x++) for (let y = 0; y < H; y++) if (dist(P, { x, y }) <= A.range && !isWall(x, y) && losOk(u, P, { x, y })) add(x, y); return out; }
+  if (A.type === 'tile') { for (let x = 0; x < W; x++) for (let y = 0; y < H; y++) if (dist(P, { x, y }) <= A.range && !isWall(x, y) && losOk(u, P, { x, y }, A.range)) add(x, y); return out; }
   if (A.type === 'dash') { for (let x = 0; x < W; x++) for (let y = 0; y < H; y++) if (dist(P, { x, y }) <= A.range && dist(P, { x, y }) > 0 && freeAt(G, x, y, u)) add(x, y); return out; }
   for (const t of G.units) {
     if (!alive(t)) continue;
@@ -911,7 +911,7 @@ function applyAbility(G, u, k, tx, ty) {
 }
 function canBasic(G, u, t, from) {
   const P = from || u;
-  return targetable(G, u, t) && dist(P, t) <= stat(G, u, 'rng') && losOk(u, P, t);
+  return targetable(G, u, t) && dist(P, t) <= stat(G, u, 'rng') && losOk(u, P, t, stat(G, u, 'rng'));
 }
 /* Line of sight: only terrain walls block (units do not). Sampled along the centre-to-centre line. */
 const EXECUTE = 0.2;
@@ -923,7 +923,8 @@ function hasLOS(a, b) {
   }
   return true;
 }
-function losOk(u, P, T) { return !(u.kind === 'hero' && HEROES[u.hero].los) || hasLOS(P, T); }
+/* Eddie's decision Q11: every enemy-targeted ranged attack or ability (range 2+) needs line of sight. Ally effects, globals, lines and dashes are exempt. */
+function losOk(u, P, T, range) { return !(u.kind === 'hero' && range >= 2) || hasLOS(P, T); }
 function basicDamage(G, u) {
   let d = stat(G, u, 'atk');
   if (hasBuff(u, 'totem')) d *= 2;
@@ -1981,7 +1982,7 @@ function myDraftTurn() {
 }
 function heroDetail(k) {
   const d = HEROES[k];
-  const traits = [d.freeAttack ? 'First basic attack each turn is free.' : '', d.los ? 'Needs line of sight.' : '', d.reset ? 'Skill kills reset her action.' : ''].filter(Boolean).join(' ');
+  const traits = [d.freeAttack ? 'First basic attack each turn is free.' : '', d.reset ? 'Skill kills reset her action.' : ''].filter(Boolean).join(' ');
   return `<div class="dhead"><span class="dic">${d.i}</span><div><h3>${d.n}</h3><div class="lvl">${d.role}${EASY.has(k) ? ' · easy' : ''} · HP ${d.hp} · ATK ${d.atk} · RNG ${d.rng} · MOV ${d.mov}</div></div></div>
     <p class="note" style="margin:0">${esc(d.about)}${traits ? ' <b>' + esc(traits) + '</b>' : ''}</p>
     <div class="dab">${AB_KEYS.map(a => `<div><b>${a.toUpperCase()} · ${esc(d.ab[a].n)}</b>${d.ab[a].quick ? ' <span class="chip" style="color:var(--good);border-color:var(--good)">free</span>' : ''}<br><span class="note">${esc(d.ab[a].d)}</span></div>`).join('')}</div>`;
@@ -2486,7 +2487,7 @@ function openRules() {
     <div><h3>Gold and levels</h3><ul><li>Last-hit minions (20–28 gold), wolves (45), heroes (100+). Everyone gets 15 gold a round.</li><li>XP comes from minions dying near you, kills and objectives. Max level 6.</li><li>Shop in your base or while dead. Standing in your own base heals you to full right away (recall, walk in or respawn).</li></ul></div>
     <div><h3>Towers</h3><ul><li>Towers shoot minions first.</li><li><b>Tower aggro:</b> if you hit an enemy hero while standing in a tower's range, it shoots you.</li><li>Let your minion wave walk in first, then hit the tower.</li></ul></div>
     <div><h3>Jungle and river</h3><ul><li>Wolf camps give gold and XP to the killer.</li><li>Ancient Drake: +1 ATK and PWR for your whole team, permanently.</li><li>Stone Golem: the killer gets the Aegis, a free revive.</li></ul></div>
-    <div><h3>Damage</h3><ul><li>Physical damage is reduced by ARM, magic by RES (minimum 1).</li><li>Pyra needs line of sight: walls block her attacks and spells. Units don't.</li><li>Stun skips a turn. Root stops movement. Slow is −1 MOV. Silence blocks abilities.</li><li>Recall any time during your turn. It ends that hero's turn; you teleport home at the start of your next turn unless you take damage.</li><li>Marksmen get one free basic attack per turn on top of their action.</li></ul></div>
+    <div><h3>Damage</h3><ul><li>Physical damage is reduced by ARM, magic by RES (minimum 1).</li><li>Line of sight: walls block every ranged attack or ability aimed at an enemy (range 2 or more). Units don't block. Heals, shields and map-wide effects ignore walls.</li><li>Stun skips a turn. Root stops movement. Slow is −1 MOV. Silence blocks abilities.</li><li>Recall any time during your turn. It ends that hero's turn; you teleport home at the start of your next turn unless you take damage.</li><li>Marksmen get one free basic attack per turn on top of their action.</li></ul></div>
     <div><h3>Controls</h3><ul><li>Click a gold tile to move, a red-ringed enemy to attack.</li><li><kbd>Q</kbd><kbd>W</kbd><kbd>E</kbd><kbd>R</kbd> abilities, <kbd>A</kbd> attack, <kbd>B</kbd> recall, <kbd>S</kbd> shop, <kbd>Space</kbd> end turn, <kbd>Tab</kbd> next hero, <kbd>Esc</kbd> cancel.</li></ul></div>
   </div>`);
 }

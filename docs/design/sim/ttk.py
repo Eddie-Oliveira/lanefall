@@ -4,24 +4,30 @@ r3: adds the six second-per-role heroes (GDD section 10) and the effects they ne
   poison:n  = n (+POW) damage at the start of each of the target's next 3 activations (does not stack: keep higher, refresh)
   missing   = + 2 per 5 missing HP (40%, rounded down), resolved last in the activation
   armor     = this ability's damage is reduced by ARM like an Attack (Deadeye's Headshot)
-Poison that KOs during the target's own activation counts as a KO before the attacker's next activation."""
+Poison that KOs during the target's own activation counts as a KO before the attacker's next activation.
+v1.0 (Eddie's decisions 2026-11-04): Poison n + POW (Q17), Viper Q/W/R Poison 1/1/2; Death Mark execute = max HP // 5
+(Q13); Flame Ring and Earthshaker root instead of stunning, Bubble CD 3 (Q3 safeguards).
+Run: python3 ttk.py [--tables] [--viper] [--stun] [--l6] [--shade]   (no flag = all reports)"""
+import sys
 import lanefall_sim as L
 
 # ---- r3 heroes (v1 numbers, GDD section 10). Tuple: key, dmg, cd, wave clear, effect -------------------------------
 NEW = {
  'ravager':    dict(hp=15, atk=2, rng=1, arm=1, spd=3, role='Fighter', ab=[('Q',2,1,2,'cleave'),('W',2,2,0,'slow2'),('E',1,2,1,'slow'),('R',3,4,0,'missing')]),
- 'viper':      dict(hp=10, atk=2, rng=1, arm=0, spd=4, role='Assassin', ab=[('Q',2,1,0,'poison:1'),('W',0,2,0,'poison:1'),('E',0,3,0,'free'),('R',3,4,0,'poison:3')]),
+ 'viper':      dict(hp=10, atk=2, rng=1, arm=0, spd=4, role='Assassin', ab=[('Q',2,1,0,'poison:1'),('W',0,2,0,'poison:1'),('E',0,3,0,'free'),('R',3,4,0,'poison:2')]),
  'stormcaller':dict(hp=10, atk=1, rng=2, arm=0, spd=3, role='Mage', ab=[('Q',3,1,2,'chain'),('W',1,3,2,'silence'),('E',1,2,0,'knock'),('R',3,4,3,None)]),
  'deadeye':    dict(hp=9,  atk=2, rng=4, arm=0, spd=3, role='Marksman', ab=[('Q',1,2,2,None),('W',1,2,1,'root'),('E',0,3,0,'free'),('R',5,4,0,'armor')]),
- 'tidesinger': dict(hp=12, atk=1, rng=2, arm=0, spd=3, role='Support', ab=[('Q',1,2,0,'stun'),('W',0,2,0,'heal:2'),('E',0,2,0,'shield:1'),('R',2,4,2,'tide')]),
- 'bramblehorn':dict(hp=15, atk=2, rng=1, arm=2, spd=3, role='Initiator', ab=[('Q',2,2,0,'stun'),('W',0,2,0,'shield:3'),('E',0,3,0,'free'),('R',2,4,3,'stun')]),
+ 'tidesinger': dict(hp=12, atk=1, rng=2, arm=0, spd=3, role='Support', ab=[('Q',1,3,0,'stun'),('W',0,2,0,'heal:2'),('E',0,2,0,'shield:1'),('R',2,4,2,'tide')]),
+ 'bramblehorn':dict(hp=15, atk=2, rng=1, arm=2, spd=3, role='Initiator', ab=[('Q',2,2,0,'stun'),('W',0,2,0,'shield:3'),('E',0,3,0,'free'),('R',2,4,3,'root')]),
 }
 NEW_BUILD = {'ravager':['sword','vamp','ruby','plate'], 'viper':['sword','edge','tome','blink'],
              'stormcaller':['tome','staff','cloth','angel'], 'deadeye':['sword','vamp','sword','edge'],
              'tidesinger':['tome','staff','ruby','veil'], 'bramblehorn':['ruby','plate','cloth','thorn']}
 OLD = list(L.H)
-POISON_POW = False   # r3 rule: POW is added to the hit, not to Poison ticks
+POISON_POW = True    # v1.0 (Q17): POW is added to Poison ticks too
 L.H.update(NEW); L.BUILD.update(NEW_BUILD)
+L.H['pyra']['ab'][1] = ('W', 1, 2, 0, 'root')   # Flame Ring: Stun -> Root (Q3 safeguard: was the only 1v1 stun lock)
+L.LVL_BONUS[6] = dict(hp=10, atk=2, pow=2)       # hypothetical level 6 for Q18 only (--l6)
 
 def burst_seq(h, tgt, acts, trace=False):
     cds = {k: 0 for k in h.cd}
@@ -38,7 +44,7 @@ def burst_seq(h, tgt, acts, trace=False):
         for k, d, cd, cl, ef in [p for p in picks if p[4] != 'missing']:
             x = d + P if d else 0
             if ef == 'armor': x = max(1, x - arm)
-            if ef and ef.startswith('execute') and hp - x <= 4: x = hp
+            if ef and ef.startswith('execute') and hp - x <= M // 5: x = hp
             if ef and ef.startswith('poison'):
                 n = int(ef.split(':')[1]) + (P if POISON_POW else 0)
                 if n >= poison[0]: poison = [n, 3]
@@ -64,7 +70,12 @@ def make(lvl, items):
                 if len(h.items) < 3: h.items.append(it)
     return hs
 
-for lvl, items in ((1, False), (3, False), (5, True)):
+def avgs(lvl, items):
+    hs = make(lvl, items)
+    return {a: sum(burst_seq(hs[a], hs[t], 3) for t in L.H) / len(L.H) for a in L.H}
+
+def tables(levels=((1, False), (3, False), (5, True))):
+  for lvl, items in levels:
     hs = make(lvl, items)
     print(f'\nLevel {lvl}{" + 3 items" if items else ""}: activations to KO (rows attacker, cols target)')
     print('%-12s' % '', ' '.join('%5s' % k[:5] for k in L.H), '|  avg')
@@ -77,8 +88,8 @@ for lvl, items in ((1, False), (3, False), (5, True)):
     print('ARM:', {k: hs[k].st('arm') for k in L.H})
 
 # ---------------------------------------------------------------------------------------------------------------
-# Shade v1.0-draft r2 (Eddie playtest): Death Mark execute = max HP // 5 (20%; alt 15% = max HP * 3 // 20),
-# Shadow Reset = once per activation, a Q/W/E KO of a hero (or neutral claim / wave wipe) refunds 1 action.
+# Shade v1.0 (Eddie Q12/Q13): Death Mark execute = max HP // 5 (20%; alt 15% = max HP * 3 // 20),
+# Shadow Reset = once per activation, any Q/W/E kill (hero, minion, neutral claim) refunds 1 action.
 # Positioning ignored (Shadow Step is her gap closer). Prints the highest CURRENT HP Shade KOs in one activation.
 def shade_report():
     rules = {'v1 flat <=4': lambda m: 4, 'v0.3 35%': lambda m: int(m * 0.35), '20% (draft)': lambda m: m // 5,
@@ -111,6 +122,63 @@ def shade_report():
         with_r = w + atk + r + thr; without = max(w + r, atk + r, w + atk) + thr
         print(f'Double KO vs Pyra-class (max {M}): Q KOs hero A at <= {q} HP, then hero B KO\'d at <= {with_r} HP'
               f' with reset (W+Attack+R) vs <= {without} without reset (2 actions).')
-        print(f'  Reset on every last hit would give 4 actions every lane turn: Q last hit + W/Attack/R on a hero'
-              f' = {w + atk + r} dmg + exec vs {max(w + r, atk + r)} with 3 actions.')
-shade_report()
+        print(f'  v1.0 reset on any Q/W/E kill (Q12 b): Shuriken last hit + Shadow Step + Attack + Death Mark on one hero'
+              f' = {w + atk + r} dmg + exec = her best 3-action burst W + Attack + R ({w + atk + r}); no burst gain, +1 gold'
+              f' and a 4th action. (Q on the wave without the reset: {max(w + r, atk + r)}.)')
+
+# ---------------------------------------------------------------------------------------------------------------
+def set_viper(q, w, r, pow_):
+    global POISON_POW
+    POISON_POW = pow_
+    L.H['viper']['ab'] = [('Q', 2, 1, 0, f'poison:{q}'), ('W', 0, 2, 0, f'poison:{w}'), ('E', 0, 3, 0, 'free'), ('R', 3, 4, 0, f'poison:{r}')]
+
+def viper_report():
+    """Q17: Poison + POW, tuned so Viper's damage peaks at the max level without being the strongest attacker."""
+    print('\nViper (Q17): average activations to KO all 14 (lower = stronger) and rank among 13 attackers (supports out)')
+    for name, v in (('r3: Poison 1/1/3, no POW', (1, 1, 3, False)), ('Eddie literal: 1/1/3 + POW', (1, 1, 3, True)),
+                    ('v1.0: 1/1/2 + POW', (1, 1, 2, True))):
+        set_viper(*v); cells = []
+        for lvl, it in ((1, False), (3, False), (5, True), (6, True)):
+            A = avgs(lvl, it); oth = sorted(x for k, x in A.items() if k not in ('viper', 'lumen', 'tidesinger'))
+            cells.append(f"L{lvl}{'*' if lvl == 6 else ''} {A['viper']:.2f} (#{1 + sum(x < A['viper'] for x in oth)}, best other {oth[0]:.1f})")
+        print(f'  {name:28s} ' + ' | '.join(cells))
+    set_viper(1, 1, 2, True)
+    print('  (* = hypothetical level 6, +10 HP / +2 ATK / +2 POW cumulative, for Q18 only)')
+
+def window(h, tgt, force, acts=2):
+    """Damage h deals to tgt over `acts` of its activations, `force` ability used first in activation 1 (cooldowns tick)."""
+    cds = {k: 0 for k in h.cd}; arm = max(0, tgt.st('arm') - h.st('pierce')); P = h.st('pow'); tot = 0; poison = [0, 0]
+    for act in range(acts):
+        a = 3; picks = []
+        abl = sorted(h.d['ab'], key=lambda x: (x[0] != force if act == 0 else 0, -x[1]))
+        for k, d, cd, cl, ef in abl:
+            if a <= 1: break
+            if (d > 0 or (k == force and act == 0)) and cds[k] == 0 and not (k == 'R' and h.G.level < 3):
+                picks.append((k, d, ef)); cds[k] = cd; a -= 1
+        for k, d, ef in picks: tot += d + P if d else 0
+        tot += sum(max(1, h.st('atk') - arm) for _ in range(2 if h.d['role'] == 'Marksman' else 1))
+        for k in cds: cds[k] = max(0, cds[k] - 1)
+    return tot
+
+STUNS = {'bulwark': ['Q', 'R'], 'butcher': ['R'], 'frostbow': ['R'], 'tidesinger': ['Q'], 'quake': ['Q'], 'bramblehorn': ['Q']}
+def stun_report():
+    """Q3: Stun = skip the next activation. 1v1 worst case: the stunner gets 2 activations in a row on the target
+    (stun activation + the one the target skipped). Does that KO a full-HP squishy / the target's own max HP?"""
+    print('\nStun window (Q3, 1v1): damage in the stun activation + the next one (target skipped), vs full-HP targets')
+    for lvl, it in ((1, False), (3, False), (5, True)):
+        hs = make(lvl, it); sq = hs['pyra']; row = []
+        for k, keys in STUNS.items():
+            for key in keys:
+                if key == 'R' and lvl < 3: continue
+                dmg = window(hs[k], sq, key); dmg_t = window(hs[k], hs['bulwark'], key)
+                row.append(f"{k[:6]}-{key} {dmg}{'!' if dmg >= sq.mhp() else ''}")
+        print(f'  L{lvl}{" +items" if it else ""} vs squishy {sq.mhp()} HP: ' + ', '.join(row) + '   (! = KO from full HP)')
+    print('  r3 Pyra (Flame Ring = Stun, CD 2) for comparison: L1 8, L3 14!, L5+items 26! -> Flame Ring now roots.')
+
+if __name__ == '__main__':
+    flags = set(sys.argv[1:]) or {'--tables', '--viper', '--stun', '--shade'}
+    if '--tables' in flags: tables()
+    if '--viper' in flags or '--l6' in flags: viper_report()
+    if '--l6' in flags: tables(((6, True),))
+    if '--stun' in flags: stun_report()
+    if '--shade' in flags: shade_report()

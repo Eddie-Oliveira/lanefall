@@ -1,6 +1,10 @@
-"""Lanefall v1.0-draft pacing simulator (docs/design/sim/lanefall_sim.py). Run: python3 lanefall_sim.py
+"""Lanefall v1.0 pacing simulator (docs/design/sim/lanefall_sim.py). Run: python3 lanefall_sim.py [--variants]
 Rules modelled exactly as written in docs/design/GDD.md (numbers in the dicts below):
- - Round = Hero phase (alternating single activations, 3 actions + marksman free Attack) then Lane phase.
+ - Round = Hero phase (alternating SINGLE activations at every size, v1.0 decision Q2; GROUP=2 = old duo turns)
+   then Lane phase. 3 actions + marksman Twin Shot.
+ - v1.0 decisions: Stun = skip the next activation (Q3) with Steadfast (no new Stun until the end of the hero's next
+   real activation); respawn = skip 1 activation, 2 if KO'd in round 8+ (Q6).
+ - CFG holds the pacing levers tested for 4v4 (round limit / VP target per size, spawn, seconds per activation).
  - Lane phase per lane: spawn, Power = minions + heroes in lane zone, winner deals the difference to loser's
    minions and pushes Front 1 step; at a tower: tower kills 2 attackers, each remaining attacker deals 1.
  - Heroes: last hit (Attack = 1 minion, AoE abilities clear N), fight, siege (Attack on structure = 2 when own wave there),
@@ -23,7 +27,7 @@ H = {
  'butcher':    dict(hp=16, atk=2, rng=1, arm=1, spd=3, role='Tank', ab=[('Q',3,2,0,'pull'),('W',1,1,2,'rot'),('E',0,2,2,'heal:3'),('R',5,4,0,'stun+drain')]),
  'blademaster':dict(hp=14, atk=3, rng=1, arm=1, spd=3, role='Fighter', ab=[('Q',2,1,3,None),('W',0,2,0,'atk+1'),('E',3,2,0,'silence'),('R',6,4,0,'omni')]),
  'shade':      dict(hp=10, atk=3, rng=1, arm=0, spd=4, role='Assassin', ab=[('Q',2,1,1,None),('W',2,2,0,'gap'),('E',0,3,0,'hide'),('R',4,4,0,'execute:4')]),
- 'pyra':       dict(hp=10, atk=1, rng=2, arm=0, spd=3, role='Mage', ab=[('Q',2,1,3,None),('W',1,2,0,'stun'),('E',3,2,0,None),('R',6,4,0,None)]),
+ 'pyra':       dict(hp=10, atk=1, rng=2, arm=0, spd=3, role='Mage', ab=[('Q',2,1,3,None),('W',1,2,0,'root'),('E',3,2,0,None),('R',6,4,0,None)]),
  'frostbow':   dict(hp=10, atk=2, rng=3, arm=0, spd=3, role='Marksman', ab=[('Q',1,2,3,'slow'),('W',0,2,0,'atk+1'),('E',0,2,0,'tumble'),('R',3,4,0,'stun')]),
  'lumen':      dict(hp=11, atk=1, rng=2, arm=0, spd=3, role='Support', ab=[('Q',0,1,0,'heal:3'),('W',1,2,1,'root'),('E',0,1,0,'shield:3'),('R',0,4,0,'wish:4')]),
  'quake':      dict(hp=13, atk=2, rng=1, arm=1, spd=3, role='Initiator', ab=[('Q',1,3,2,'stun'),('W',0,2,0,'totem'),('E',1,1,2,'slow'),('R',2,4,3,'echo')]),
@@ -46,7 +50,13 @@ MAPS = {
  'bridge': dict(lanes=1, N=4, towers=[2,3], tower_hp=8, core_hp=12, vp=[5,6,7,8], limit=8, travel=1, start_lvl=3, recall=False,
                 start_gold=6, objs=[], camps=0),
 }
-SPAWN = lambda r: 2 if r < 7 else 3
+CFG = dict(GROUP=1, STUN_SKIP=True, STEADFAST=True, LATE_RESPAWN=(8, 2),
+           LIMIT={('hollow', 4): 10}, VP={('hollow', 4): 10}, SPAWN3_FROM=7,   # overrides of MAPS (v1.0: Twin Hollow 4v4)
+           SEC=(45, 70), SEC_BIG=(40, 55), SEC_SKIP=5)
+# SEC: average seconds per activation (expert, learning) with the 60 s / 90 s timer (1v1, 2v2); SEC_BIG: 3v3/4v4 with the
+# v1.0 45 s / 60 s timer (assumption: players use ~40 of 45 s, learners ~55 of 60 s). Skipped activation: SEC_SKIP s.
+SPAWN = lambda r: 2 if r < CFG['SPAWN3_FROM'] else 3
+WAVE_SEEN = []   # (hero key, enemy minions in the lane at the start of a lane activation) - Shadow Reset check (Q12)
 ORDER = 'trail'
 SHOPRECALL = True
 CAP, TOWER_KILLS, TOWER_SHOT, SIEGE, CAMP_HP, CAMP_GOLD = 6, 2, 3, 2, 4, 2
@@ -57,7 +67,7 @@ class Hero:
         s.items = []; s.gold = G.M['start_gold']; s.cd = {a[0]: 0 for a in s.d['ab']}
         s.loc = 'base'; s.dead = False; s.skip = False; s.recall = False; s.stun = False; s.silence = False
         s.shield = 0; s.aegis = False; s.kills = s.deaths = s.lasthits = 0; s.buff = None; s.hidden = False
-        s.travel = 0; s.lane = 0; s.hp = 0; s.G = G
+        s.travel = 0; s.lane = 0; s.hp = 0; s.G = G; s.steadfast = False; s.skips = 0
     def st(s, k):
         v = s.d.get(k, 0) + LVL_BONUS[s.G.level].get(k, 0)
         for it in s.items: v += ITEMS[it][1].get(k, 0)
@@ -69,7 +79,7 @@ class Hero:
 class Game:
     def __init__(s, mapk, size, seed, act_h=40, act_b=10, humans=None):
         s.M = M = MAPS[mapk]; s.mk = mapk; s.rng = random.Random(seed); s.size = size
-        s.vpt = M['vp'][size-1]; s.round = 0; s.level = M['start_lvl']; s.vp = [0, 0]; s.tatk = [0, 0]; s.brood = [0, 0]
+        s.vpt = CFG['VP'].get((mapk, size), M['vp'][size-1]); s.limit = CFG['LIMIT'].get((mapk, size), M['limit']); s.round = 0; s.level = M['start_lvl']; s.vp = [0, 0]; s.tatk = [0, 0]; s.brood = [0, 0]
         pool = list(H); s.rng.shuffle(pool)
         s.heroes = [Hero(pool[i], 0, s) for i in range(size)] + [Hero(pool[size + i], 1, s) for i in range(size)]
         for h in s.heroes: h.hp = h.mhp()
@@ -83,7 +93,7 @@ class Game:
             hs = [h for h in s.heroes if h.team == t]
             order = {3: [1, 0, 2, 2], 2: [0, 1, 0, 1], 1: [0, 0, 0, 0]}[M['lanes']]
             for j, h in enumerate(hs): h.lane = order[j]
-        s.stats = dict(kills=0, towers=0, objs=0, first_tower=None, dive_shots=0, lasthits=0, acts=0)
+        s.stats = dict(kills=0, towers=0, objs=0, first_tower=None, dive_shots=0, lasthits=0, acts=0, skips=0, stun_skips=0)
 
     def sgn(s, t): return -1 if t == 0 else 1  # side of team t on the front track
     def tower_at_front(s, l, attacker):
@@ -127,7 +137,7 @@ class Game:
             if h.aegis: h.aegis = False
             else: h.items.remove('angel'); h.items.append('cloth')
             h.hp = h.mhp() // 2; return
-        h.dead = True; h.skip = True; h.deaths += 1; h.loc = 'dead'; h.recall = False
+        h.dead = True; h.skip = CFG['LATE_RESPAWN'][1] if s.round >= CFG['LATE_RESPAWN'][0] else 1; h.stun = False; h.deaths += 1; h.loc = 'dead'; h.recall = False
         s.vp[1 - h.team] += 1; s.stats['kills'] += 1
         if src: src.gold += 3; src.kills += 1
         for a in s.heroes:
@@ -137,10 +147,15 @@ class Game:
     def activate(s, h):
         s.stats['acts'] += 1; h._shot = False; h.hidden = False
         if h.dead:
-            if h.skip: h.skip = False; return  # skips this activation
+            if h.skip: h.skip -= 1; s.stats['skips'] += 1; return  # skips this activation
             h.dead = False; h.hp = h.mhp(); h.loc = 'base'
         a = 3
-        if h.stun: a = 1; h.stun = False
+        if h.stun:
+            h.stun = False
+            if CFG['STUN_SKIP']:
+                s.stats['skips'] += 1; s.stats['stun_skips'] += 1; h.recall = False
+                h.steadfast = CFG['STEADFAST']; return   # Stun: the whole activation is skipped
+            a = 1
         sil = h.silence; h.silence = False
         if h.recall: h.recall = False; h.loc = 'base'
         if h.loc == 'base':
@@ -174,6 +189,7 @@ class Game:
             for (t, i), tm in s.camps.items():
                 if t == h.team and tm == 0 and s.rng.random() < 0.5:
                     s.camps[(t, i)] = 3; h.gold += CAMP_GOLD; h.hp -= 1; a -= 2; break
+        if isinstance(h.loc, tuple) and h.loc[0] == 'lane': WAVE_SEEN.append((h.key, s.wave[h.loc[1]][1 - h.team]))
         foes = s.foes_here(h)
         if foes and a > 0:
             tgt = min(foes, key=lambda e: e.hp)
@@ -182,6 +198,11 @@ class Game:
             if burst >= tgt.hp or (not dive and (h.hp >= tgt.hp and s.rng.random() < 0.5 or s.rng.random() < 0.2)):
                 s.fight(h, foes, a, sil); return
         s.lane_actions(h, a, sil)
+
+    def run_activation(s, h):
+        was = h.steadfast and not h.dead and not h.stun
+        s.activate(h)
+        if was: h.steadfast = False          # Steadfast ends after the hero's next real activation
 
     def obj_desire(s, h):
         down = sum(1 for e in s.heroes if e.team != h.team and e.dead)
@@ -249,7 +270,7 @@ class Game:
                 if ef.startswith('execute') and not tgt.dead and tgt.hp <= 4: s.damage(h, tgt, tgt.hp + 99)
                 if 'drain' in ef: h.hp = min(h.mhp(), h.hp + dmg // 2)
                 if not tgt.dead:
-                    if 'stun' in ef: tgt.stun = True
+                    if 'stun' in ef and not tgt.steadfast: tgt.stun = True
                     if ef == 'silence': tgt.silence = True
                 if cl and l is not None: s.clear(h, l, cl)
                 if tgt.dead:
@@ -348,7 +369,7 @@ class Game:
         M = s.M
         for o in s.obj.values():
             if o['first'] <= 1: o['up'] = True; o['cur'] = o['hp']
-        for r in range(1, M['limit'] + 1):
+        for r in range(1, s.limit + 1):
             s.round = r; s.level = level_of(r, M['start_lvl'])
             for h in s.heroes:
                 h.gold += 1; h.shield = 0
@@ -356,12 +377,12 @@ class Game:
             first = (0 if s.vp[0] < s.vp[1] else 1 if s.vp[1] < s.vp[0] else (r + 1) % 2) if ORDER == 'trail' else (0 if s.vp[0] > s.vp[1] else 1 if s.vp[1] > s.vp[0] else (r + 1) % 2) if ORDER == 'lead' else (r + 1) % 2
             A = [h for h in s.heroes if h.team == first]; B = [h for h in s.heroes if h.team != first]
             s.rng.shuffle(A); s.rng.shuffle(B)
-            gs = 2 if s.size >= 3 else 1; DA = [A[i:i+gs] for i in range(0, len(A), gs)]; DB = [B[i:i+gs] for i in range(0, len(B), gs)]
+            gs = CFG['GROUP'] if s.size >= 3 else 1; DA = [A[i:i+gs] for i in range(0, len(A), gs)]; DB = [B[i:i+gs] for i in range(0, len(B), gs)]
             seq = []
             for x, y in zip(DA, DB): seq += x + y
             if True:
                 for h in seq:
-                    s.activate(h)
+                    s.run_activation(h)
                     if s.winner is not None: return s.result()
                     if max(s.vp) >= s.vpt: s.winner = 0 if s.vp[0] >= s.vpt else 1; s.end = 'vp'; return s.result()
             s.lane_phase()
@@ -383,27 +404,67 @@ class Game:
     def result(s):
         return dict(round=s.round, end=s.end, winner=s.winner, vp=list(s.vp), acts=s.stats['acts'], **{k: v for k, v in s.stats.items() if k != 'acts'})
 
-def summarize(mk, size, n=500, seed0=1, sec_h=40, sec_b=10, lane_sec=20):
+def summarize(mk, size, n=500, seed0=1):
     R = [Game(mk, size, seed0 + i).play() for i in range(n)]
     rounds = sorted(r['round'] for r in R)
     ends = {}
     for r in R: ends[r['end']] = ends.get(r['end'], 0) + 1
-    acts = statistics.mean(r['acts'] for r in R)
-    lanes = MAPS[mk]['lanes']
-    # minutes: all heroes human-controlled at sec_h per activation, + lane phase (lane_sec + 5/lane) per round
-    slots = 2 * size if size <= 2 else 2 * ((size + 1) // 2)   # 1v1/2v2 single activations, 3v3/4v4 duo turns
-    slot_sec = 45 if size <= 2 else 55
-    lane = 15 + 5 * lanes
-    mins = statistics.mean(rounds) * (slots * slot_sec + lane) / 60
-    bots_only = statistics.mean(rounds) * (2 * size * 3 + lane) / 60
+    lanes = MAPS[mk]['lanes']; lane = 15 + 5 * lanes
+    g = CFG['GROUP'] if size >= 3 else 1
+    SEC = CFG['SEC_BIG'] if size >= 3 else CFG['SEC']
+    def mins(sec):   # real activations x sec per slot (a duo slot = +10 s), skipped activations SEC_SKIP s, lane phases
+        tot = 0
+        for r in R:
+            real = r['acts'] - r['skips']
+            tot += (real / g) * (sec + (10 if g == 2 else 0)) + r['skips'] * CFG['SEC_SKIP'] / g + r['round'] * lane
+        return tot / n / 60
+    rm = statistics.mean(rounds)
+    wait = (2 * size / g - 1) * (SEC[0] + (10 if g == 2 else 0)) + lane   # expert seconds between your turns
     ft = [r['first_tower'] for r in R if r['first_tower']]
-    return dict(map=mk, size=f'{size}v{size}', rounds_mean=round(statistics.mean(rounds), 1), p10=rounds[n // 10], p90=rounds[9 * n // 10],
-                ends={k: f'{round(100 * v / n)}%' for k, v in ends.items()}, minutes_human=round(mins), minutes_1human_rest_bots=round(statistics.mean(rounds) * ((2*size-1)*4 + 45 + 15 + 5*lanes) / 60), acts=round(acts, 1),
+    return dict(map=mk, size=f'{size}v{size}', rounds_mean=round(rm, 1), p10=rounds[n // 10], p90=rounds[9 * n // 10],
+                ends={k: f'{round(100 * v / n)}%' for k, v in sorted(ends.items())}, minutes_expert=round(mins(SEC[0])),
+                minutes_learning=round(mins(SEC[1])), minutes_1human_rest_bots=round(rm * ((2*size-1)*4 + 45 + lane) / 60),
+                wait_s=round(wait), acts=round(statistics.mean(r['acts'] for r in R), 1),
+                skips=round(statistics.mean(r['skips'] for r in R), 1), stun_skips=round(statistics.mean(r['stun_skips'] for r in R), 1),
                 kills=round(statistics.mean(r['kills'] for r in R), 1), towers=round(statistics.mean(r['towers'] for r in R), 1),
                 first_tower=round(statistics.mean(ft), 1) if ft else None, objs=round(statistics.mean(r['objs'] for r in R), 1),
                 lasthits=round(statistics.mean(r['lasthits'] for r in R), 1), dive_shots=round(statistics.mean(r['dive_shots'] for r in R), 1),
+                reach_r11=f"{round(100 * sum(r['round'] >= 11 for r in R) / n)}%",
                 team0_win=f"{round(100 * sum(r['winner'] == 0 for r in R) / n)}%", team1_win=f"{round(100 * sum(r['winner'] == 1 for r in R) / n)}%")
 
+def wave_report():
+    """Q12: enemy minions in the lane when a hero starts a lane activation (= kills Shade needs to wipe the wave)."""
+    for who in ('shade', None):
+        xs = [w for k, w in WAVE_SEEN if who is None or k == who]
+        if not xs: continue
+        dist = {i: round(100 * xs.count(i) / len(xs)) for i in range(7)}
+        print(f"wave at lane activation ({who or 'all heroes'}, n={len(xs)}): mean {statistics.mean(xs):.2f}, median {statistics.median(xs)}, "
+              f"distribution % {dist}, wipeable by Shade (<= 2: Attack + Shuriken) {sum(x <= 2 and x > 0 for x in xs) * 100 // len(xs)}%, "
+              f"single kill wipes (=1) {xs.count(1) * 100 // len(xs)}%, empty {xs.count(0) * 100 // len(xs)}%")
+
+NO_LEVERS = dict(LIMIT={}, VP={}, SEC_BIG=(45, 70))
+VARIANTS = {   # 4v4 pacing levers for single alternation (Q2); each entry = CFG changes on top of the v1.0 default
+    'single, no levers (60 s timer, 12 rounds)': NO_LEVERS,
+    'old duo turns (reference)': dict(NO_LEVERS, GROUP=2),
+    'A: 4v4 limit 10 + VP 10 (both maps)': dict(NO_LEVERS, LIMIT={('rift', 4): 10, ('hollow', 4): 10}, VP={('rift', 4): 10, ('hollow', 4): 10}),
+    'B: A + spawn 3 from round 5': dict(NO_LEVERS, LIMIT={('rift', 4): 10, ('hollow', 4): 10}, VP={('rift', 4): 10, ('hollow', 4): 10}, SPAWN3_FROM=5),
+    'E: 45 s timer only': dict(NO_LEVERS, SEC_BIG=(40, 55)),
+    'v1.0: 45 s timer + Hollow 4v4 limit/VP 10': {},
+    'D: 45 s timer + limit/VP 9 (both maps)': dict(LIMIT={('rift', 4): 9, ('hollow', 4): 9}, VP={('rift', 4): 9, ('hollow', 4): 9}),
+}
+
 if __name__ == '__main__':
+    if '--variants' in sys.argv:
+        base = dict(CFG)
+        for name, ch in VARIANTS.items():
+            CFG.clear(); CFG.update(base)
+            CFG.update(ch)
+            for mk in ('rift', 'hollow'):
+                for sz in (3, 4):
+                    r = summarize(mk, sz, n=300)
+                    print(f"{name:38s} {mk:6s} {r['size']} rounds {r['rounds_mean']:4} ({r['p10']}-{r['p90']}) min {r['minutes_expert']}/{r['minutes_learning']}"
+                          f" wait {r['wait_s']}s ends {r['ends']} KOs {r['kills']} win {r['team0_win']}-{r['team1_win']}")
+        sys.exit()
     for mk, sizes in (('rift', (1, 2, 3, 4)), ('hollow', (1, 2, 3, 4)), ('bridge', (1, 2, 3, 4))):
         for sz in sizes: print(json.dumps(summarize(mk, sz)))
+    wave_report()

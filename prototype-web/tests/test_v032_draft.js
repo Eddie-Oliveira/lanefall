@@ -1,5 +1,5 @@
 const fs=require('fs');const d=require('path').join(__dirname,'../src/');
-const src=fs.readFileSync(d+'engine.js','utf8')+'\n'+fs.readFileSync(d+'ai.js','utf8')+'\nmodule.exports={newLobby,setTeamSize,startGame,startDraft,draftSlot,draftPick,botDraftHero,doAction,aiStep,heroes,HEROES,HERO_KEYS,setMap,abHits,applyAbility,byId,fresh,MAPS};';
+const src=fs.readFileSync(d+'engine.js','utf8')+'\n'+fs.readFileSync(d+'ai.js','utf8')+'\nmodule.exports={canBasic,newLobby,setTeamSize,startGame,startDraft,draftSlot,draftPick,botDraftHero,doAction,aiStep,heroes,HEROES,HERO_KEYS,setMap,abHits,applyAbility,byId,fresh,MAPS};';
 const m={exports:{}};new Function('module',src)(m);const E=m.exports;let ok=0,bad=0;const T=(c,n)=>{c?ok++:(bad++,console.log('FAIL',n))};
 // draft 4v4: sequence of teams picking and uniqueness, bot roles
 for (const n of [1,2,3,4]) {
@@ -38,7 +38,15 @@ Ti.acted=false;const mv0=Ti.mv;e=E.doAction(G,{t:'ab',id:Ti.id,k:'e',x:7,y:11});
 // ravager guillotine missing hp; bramblehorn earthshaker vortex
 G.turnTeam=1;[Br,Ra].forEach(h=>{h.done=false;h.acted=false;h.mv=3;h.lvl=3;h.cd.r=0});
 St.hp=Math.floor(St.mhp/2);Ra.x=7;Ra.y=8; const before=St.hp; e=E.doAction(G,{t:'ab',id:Ra.id,k:'r',x:7,y:9});T(!e,'guillotine '+e);T(before-St.hp>=E.HEROES.ravager.ab.r.dmg.b,'big hit');
-St.dead=false;St.hp=St.mhp;Ti.hp=Ti.mhp;Ti.st=E.fresh();St.st=E.fresh();Ti.x=9;Ti.y=12; St.x=7;St.y=12; Br.x=9;Br.y=10; e=E.doAction(G,{t:'ab',id:Br.id,k:'r',x:8,y:12});T(!e,'earthshaker '+e);
+St.dead=false;St.hp=St.mhp;Ti.hp=Ti.mhp;Ti.st=E.fresh();St.st=E.fresh();Ti.x=9;Ti.y=12; St.x=7;St.y=12; Br.x=10;Br.y=13; e=E.doAction(G,{t:'ab',id:Br.id,k:'r',x:8,y:12});T(!e,'earthshaker '+e);
 T(Ti.x===8&&Ti.y===12||St.x===8&&St.y===12,'pulled to centre');T(Ti.st.stun===1&&St.st.stun===1,'both stunned');
 console.log(ok,'passed',bad,'failed');
 if(bad)console.log('dbg', JSON.stringify({St:[St.x,St.y,St.hp,St.st.stun,St.dead],Ti:[Ti.x,Ti.y,Ti.hp,Ti.st.stun],Br:[Br.x,Br.y,Br.lvl,Br.acted]}), G.log.slice(-3).map(l=>l.t));
+{ // Q11: LoS for all ranged enemy targeting
+  const G2=E.newLobby('local');E.setTeamSize(G2,1);G2.slots[0].hero='frostbow';G2.slots[1].hero='bulwark';E.startGame(G2);E.setMap('rift');
+  G2.units=G2.units.filter(u=>u.kind==='hero');const [F]=E.heroes(G2,0),[B]=E.heroes(G2,1);
+  F.x=2;F.y=6;B.x=5;B.y=6; T(!E.abHits(G2,F,'q',5,6),'frostbow volley blocked by wall');
+  F.x=2;F.y=8;B.x=5;B.y=8; T(!!E.abHits(G2,F,'q',5,8),'frostbow volley clear');
+  F.x=4;F.y=5;B.x=4;B.y=7; T(!E.canBasic(G2,F,B),'basic blocked by wall (4,6)');
+}
+console.log(ok,'passed',bad,'failed');

@@ -26,6 +26,29 @@ Rules
 
 ---
 
+### [2026-11-04] v0.3.3 · Prototype: line of sight for all ranged enemy targeting (Q11)
+areas: CODE | QA
+agent: lead
+- Eddie's decision Q11 applied to the web prototype: every enemy-targeted ranged attack or ability (range 2+) needs line of sight; walls block, units don't; ally effects, globals, lines and dashes exempt. Per-hero LoS flags removed.
+- Files: prototype-web/lanefall-v0.3.html, prototype-web/src/{engine,ui}.js, prototype-web/tests/test_v032_draft.js
+- Tests: test_v032_draft.js 74/74 (adds LoS for Frostbow basic and Volley), test_v031.js 13/13; bot sims all maps, 0 rule errors
+- Needs: none
+
+### [2026-11-04] v1.0 · GDD v1.0 (decided): Eddie's answers to Q1–Q17
+areas: DESIGN | CODE | BOTS | NET | ASSETS | UX | QA
+agent: design
+- Eddie answered Q1–Q17 (raw answers + "how applied" in `docs/design/decisions-2026-11-04.md`); GDD is now v1.0 (decided), §17 = Decision log + one new open question **Q18 (add level 6?)**, recommendation: keep 5 levels.
+- Where Eddie differed: **single activations** at every size (4v4 back under 75 min with a 45 s timer at 3v3/4v4 + Twin Hollow 4v4 limit/VP 10); **Stun skips the turn** with safeguards (Steadfast immunity, Cleansing Veil/Riptide save the turn, Flame Ring + Earthshaker root, Bubble CD 3); **respawn skip 2 from round 8**; **Commander** 2v2 (two heroes per player, A1 B1 A2 B2, snake A BB A, starter pairs, §4.1); **Viper Poison + POW**, Kiss of Death Poison 3 → 2 so she peaks at max level.
+- LoS is a board rule for all enemy-targeted ranged attacks/abilities (exemptions in §3); Mage and Deadeye LoS traits removed, no replacement; Pyra stays nerfed (Pyroblast range 3, Flame Ring root). Shade: wave-wipe measured at median 3 minions (mean 3.4 when not empty, single-kill wipe 6%), so Shadow Reset = **any Q/W/E kill**, once per activation (Eddie's condition). Q16: coin flip for first pick, other team picks round-1 starter, rematches alternate.
+- Files: docs/design/GDD.md, docs/design/decisions-2026-11-04.md, docs/design/sim/lanefall_sim.py, docs/design/sim/ttk.py, docs/design/sim/results.jsonl
+- Tests: `python3 docs/design/sim/lanefall_sim.py` (500 games/map/size, v1.0 rules): 4v4 Rift 52/69 min, Twin Hollow 49/66 (expert/learning; no levers: 57/86, 65/97; duo was 37/52); Commander 32–34/48–50; all games end by the limit. `--variants` lever table (GDD 16.3). `ttk.py --viper`: Viper L1/L3/L5 3.0/2.8/1.9, #3 at L5 behind marksmen 1.8. `--stun`: no 1v1 stun-window KO of a full-HP squishy except L5 Frostbow (r3 Pyra could at L3). `--shade`: reset b adds no single-target burst. `draft.py` unchanged.
+- Needs: CODE: implement `core/` from GDD v1.0 — single-alternation `ActivationOrder` (skips keep their slot, "Go next" claims), Stun-skip + Steadfast, Veil on a stunned turn, respawn 2 from round 8, LoS for every enemy-targeted ranged action (§3 exemptions), Shadow Reset on any Q/W/E kill, Poison + POW, card changes (Pyroblast 3, Flame Ring/Earthshaker Root, Bubble CD 3, Kiss of Death Poison 2), first-pick coin flip + round-1 choice, Commander lobby, Twin Hollow 4v4 10/10, per-size timers; unit tests listed in GDD §19 "CODE (v1.0)".
+- Needs: BOTS: choose which hero activates each team turn (Commander + bot teams), Threat counts stuns as lost turns, skip stuns on Steadfast targets, Shade Shuriken-the-wave-first plan, POW-aware Poison, LoS for all ranged, Commander bot drafts a starter pair.
+- Needs: NET: one active hero at a time (duo turns dropped), "Go next" slot claims locking at team-turn start, timers 60 s (1v1/2v2) / 45 s (3v3/4v4) + per-player 30 s bank, Commander (one client, two heroes), coin flip + round-1 choice in the replay log.
+- Needs: ASSETS: Steadfast token (grey ring), skipped-turn marker for the turn strip, coin-flip draft animation; Flame Ring/Earthshaker VFX now read as root, not stun.
+- Needs: UX: turn-order strip (A B A B, skipped slots), "Go next" button, "Skips next turn" stun preview, LoS overlay for every ranged hero, Commander HUD (two hero cards, choose-who-acts) and draft with starter pairs, first-pick/round-1 choice screen, timer ring per size, planning mode during others' turns (~5 min 4v4 wait), quick reference §15 and tutorial §14 prompts.
+- Needs: QA: acceptance tests from GDD §19 (stun before/after activation, Steadfast vs Bubble→Horn Toss, Veil on stunned turn, KO round 7 vs 8, LoS exemptions incl. Shadow Step through a wall, single Shuriken reset, Poison with POW 2, Commander order A1 B1 A2 B2, seeded replay); compare `core/` against `lanefall_sim.py` ranges (§16.2) once all 14 heroes are in.
+
 ### [2026-11-04] v0.3.2 · Prototype: 14 heroes (2 per class) and snake draft
 areas: CODE | QA
 agent: lead
