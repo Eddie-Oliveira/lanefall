@@ -1,6 +1,6 @@
 # Lanefall — Game Design Document v1.0-draft
 
-Owner: design · Status: **draft for Eddie's review** (r2: playtest fixes for Pyra line of sight and Shade, see 18.1) · Replaces the v0.3 rules (frozen in `prototype-web/`).
+Owner: design · Status: **draft for Eddie's review** (r3: 14 heroes, 2 per role, and the hero draft, see 18.2; r2: playtest fixes for Pyra line of sight and Shade, see 18.1) · Replaces the v0.3 rules (frozen in `prototype-web/`).
 Inputs: `docs/design/research/tabletop-moba.md`, v0.3 `prototype-web/src/engine.js`, simulations in `docs/design/sim/`.
 Why the redesign: `docs/design/v1.0-redesign-rationale.md`.
 
@@ -33,7 +33,7 @@ to the VP target wins, or the leader when the round limit ends the match (12 rou
 
 | Piece | Count per match | Notes |
 |---|---|---|
-| Hero miniature | 2–8 | On a hex. Base ring shows team color + condition tokens. |
+| Hero miniature | 2–8 (pool of 14, chosen in the draft, 10.2) | On a hex. Base ring shows team color + condition tokens. |
 | Hero card (HUD) | 1 per hero | Stats, 4 abilities with cooldown pips, 3 item slots. |
 | Front marker | 1 per lane | Sits on a lane node; the "where the waves meet" flag. |
 | Minion miniatures | up to 6 per side per lane | Cosmetic stack around the Front marker; the **number** is the rule. Melee/caster looks are cosmetic. |
@@ -60,8 +60,9 @@ table and are the Skytear standard (**from Skytear**). Pointy-top hexes, axial c
   (blocking terrain). **Units never block LoS**: heroes, minions, neutrals and structures are all see-through. Your own
   hex and the target hex never block. A line that runs exactly along the edge between a wall and an open hex is **not**
   blocked (only a line that has walls on both sides of that edge is). Where LoS applies, a target out of LoS cannot be
-  chosen; the board shows it (section 19, UX). **Who needs LoS:** Pyra, for every Attack and ability (her trait,
-  section 10). Whether it extends to every ranged hero is **OPEN Q11**.
+  chosen; the board shows it (section 19, UX). **Who needs LoS (r3):** heroes with the **Line of Sight** trait, for every
+  Attack and ability: the two Mages (Pyra, Stormcaller; Mage role trait) and Deadeye (sniper), section 10.
+  Whether it extends to every ranged hero is **OPEN Q11**.
   CODE detail: hex line by cube-coordinate lerp traced twice with a +ε and a −ε nudge; blocked only if *both* traces hit
   a wall. Use exact integer/fixed-point math so it is deterministic.
 
@@ -78,7 +79,7 @@ one long lane brawl). Map sketches: section 11.
 
 ## 4. Round structure
 
-A match is a series of **rounds** (12 on The Rift and Twin Hollow, 8 on Frost Bridge). Each round:
+Before round 1 the lobby picks heroes (**hero draft**, 10.2). A match is a series of **rounds** (12 on The Rift and Twin Hollow, 8 on Frost Bridge). Each round:
 
 1. **Start step** (automatic). Every hero +1 gold. Level-ups (section 6). Objectives that are due appear.
 2. **Hero phase.** Teams alternate activations until every hero has activated once.
@@ -179,9 +180,17 @@ On your activation you take **up to 3 actions**. **Each action at most once, exc
 
 Typical turns: *Move, Attack, Q* · *Q, E, Attack* · *Move, Move, Attack* · *Move, Move, Recall*.
 
-**Marksman extra attack (Eddie's request, kept):** Frostbow's trait **Twin Shot** — her Attack action hits twice
-(same or different targets, each hit reduced by armor separately; two last hits on a wave). It fits the no-repeat
-budget instead of being an exception to it (v0.3 needed a separate `freeAttack` flag and a `freeUsed` tracker).
+**Marksman extra attack (Eddie's request, kept):** **Twin Shot** is the **Marksman role trait** (r3: Frostbow and
+Deadeye) — the Attack action hits twice (same or different targets, each hit reduced by armor separately, each needs
+range, and LoS for Deadeye; two last hits on a wave). This is how v1 answers Eddie's "Attack should be a free action for
+marksmen, at least once a turn": a marksman gets two Attacks' worth of damage for one action, so Attack + 2 abilities
+is a normal turn. It fits the no-repeat budget instead of being an exception to it (v0.3 needed a separate `freeAttack`
+flag and a `freeUsed` tracker; the web prototype still uses the free-Attack form for both marksmen).
+
+**Free abilities (r3, new on hero cards; items already had them):** an ability marked **Free** does not use one of your
+3 actions. Still once per activation and still on cooldown. Not usable while **Stunned** (Stun = 1 action and nothing
+else, except Cleansing Veil) or **Silenced** (it is an ability); a Free dash or jump is not usable while **Rooted**.
+Free abilities: Viper's Slither, Deadeye's Rocket Jump, Bramblehorn's War Bellow.
 
 **Assassin reset (Eddie's request):** Shade's trait **Shadow Reset** gives her +1 action, at most once per activation,
 when Q/W/E scores a kill that matters (hero KO, neutral claim, or wiping the enemy wave). Full rule with Shade in section 10.
@@ -224,8 +233,12 @@ Now "ult at level 3, round 5" is on the card. Gold (from last hits, kills, tower
 | **Silence** | Cannot use abilities (Q/W/E/R). |
 | **Shield n** (good) | Absorbs n damage until the start of the owner's next activation. |
 
-Same condition twice does not stack (keep one token). Structures and neutrals ignore conditions; Hidden (Shade) is a hero
-state, not a condition. Removed from v0.3: Burn (damage over time with its own ticking order).
+Same condition twice does not stack (keep one token; for Shield keep the higher number, for durations the longer).
+**Duration (r3):** a condition lasts the target's next activation; a number in brackets is how many of its activations it
+lasts, e.g. **Slow (2)** (Ravager's Hamstring). Structures and neutrals ignore conditions; Hidden (Shade) is a hero
+state, not a condition. Removed from v0.3: Burn as a condition (damage over time with its own ticking order); r3's
+**Poison** is Viper's hero trait with one fixed tick moment (6.9), not a sixth condition. **Haste** is a buff, not a
+condition (6.9).
 **OPEN Q3:** stun = 1 action (recommended) vs skip the activation.
 
 ### 6.7 Recall and base (**kept from v0.3**, Eddie's requests)
@@ -235,6 +248,46 @@ state, not a condition. Removed from v0.3: Burn (damage over time with its own t
 - **Being in your base heals you to full** at the start of each of your activations and at the end of each Lane phase. No potions exist.
 - Frost Bridge has **no recall** (single-lane brawl tradition); health relics instead.
 - Travel: leaving the base to your nearest tower is 1 Move; reaching the river node is 2–3 Moves.
+
+### 6.8 Movement effects (r3: one definition for every hero)
+Areas on the hex board: **radius 1** = the target hex and its 6 neighbors (the prototype's "3×3"); **radius 2** = also the
+next ring, 19 hexes (the prototype's "5×5").
+
+| Effect | Who moves | Rule |
+|---|---|---|
+| **Dash N** (Charge, Tumble, Slither) | you | Move up to N hexes along a path, like Move (through allies; Tumble also through enemies). Slow does not shorten it. |
+| **Jump N** (Leap, Rocket Jump) | you | Place yourself on any free hex within N, **no wall hex on the straight line** (LoS rule, section 3); units do not block. |
+| **Teleport** (Shadow Step, Omnislash, Blink Charm) | you | As written on the card; ignores walls. |
+| **Knockback N** (Gust, Horn Toss) | target | Moves N hexes **straight away** from you (for a Line ability: along the line's direction). It stops early, with no extra damage, before a hex it could not stand on: wall, any unit (hero, neutral, structure), board edge. |
+| **Pull** (Meat Hook) | target | Moves to the free hex next to you on the line (kept from r1). |
+| **Pull to centre** (Earthshaker) | every enemy hero in the area | Each moves to the **free hex closest to the centre** that it can reach in **up to 2 steps** without crossing walls or units. Resolve closest-to-centre first; ties: the caster chooses (bots: fixed hex order). The centre hex counts. |
+
+- **What can't be moved by others:** structures, neutrals and minion waves (the wave is a number on the Front, section 5),
+  Hidden heroes (not targetable). Forced movement ignores Root and Shield (Root stops only your own Move/dash/jump/teleport).
+- Forced movement can push or drag a hero **into tower range or a clash zone** (that is the point: veterans push divers into
+  their tower). Being moved is not damage: it does not trigger the tower-dive shot by itself and does not cancel Recall
+  (the damage that usually comes with it does).
+- Previews show the final hex of every forced move (BOTS/UX use the same preview).
+
+### 6.9 Other effects added in r3 (defined once here)
+- **Cleanse** (Riptide; same as the Cleansing Veil item): remove all conditions (Stun, Root, Slow, Silence) and Poison
+  from the target. It does not remove Shield, Haste, Hidden or item effects.
+- **Haste** (Current) — a **buff, not a condition**: +2 SPD on each Move until the end of the target's **next**
+  activation; cast on yourself it also covers the rest of this activation. Slow and Haste together = SPD +0. Not
+  removed by Cleanse; a second Haste does not stack.
+- **Missing-HP damage** (Guillotine): **+2 per full 5 HP the target is missing** (= 40%, rounded down). Missing HP =
+  max HP − current HP **when the ability resolves** (after earlier hits this activation, before this hit). The preview
+  shows the total. Example: a 20-HP hero at 10 HP takes 3 + 4 = 7.
+- **Chain N** (Chain Lightning): after the first target, the bolt **jumps** to another enemy unit within **2 hexes of the
+  last unit hit**, not hit yet, up to N times; the caster picks each jump (bots: preview score). Only the first target
+  needs range and LoS. A minion wave counts as one unit when its Front hex is within 2 (the jump kills 1 minion, +1
+  gold); neutrals count; structures never.
+- **Poison n** (Viper's trait): at the **start of each of the target's next 3 activations**, before anything else, it
+  loses **n HP** (ignores armor; Shield absorbs it like any damage). **POW is not added to Poison** (it already counts
+  3 times; POW still adds to the hit). A new Poison does not stack: keep the higher n and restart at 3. Heroes only.
+  Removed by **Cleanse**, by **KO**, and by **being in your base** (recall arrival resolves first, so recalling clears
+  it before it ticks). A Poison KO credits Viper (VP, gold); Poison damage is ability damage for the assist rule. Token:
+  the n value with 3 pips.
 
 ---
 
@@ -327,10 +380,72 @@ The HUD shows "Round 9 of 12" and both VP totals at all times. **OPEN Q5** on th
 
 ---
 
-## 10. Heroes (8)
+## 10. Heroes (14: 2 per role)
 
 All heroes: POW 0 at start. Numbers are for level 1 (see 6.4 for growth). "Wave N" = also kills up to N minions in a
-clash zone the ability touches. Lines are in 6 hex directions. "Adjacent" = range 1.
+clash zone the ability touches. Lines are in 6 hex directions. "Adjacent" = range 1. "Radius 1/2" areas, dashes, jumps,
+knockback and pulls: 6.8. Cleanse, Haste, missing-HP damage, Chain, Poison: 6.9. **Free** abilities: 6.2.
+
+### 10.1 Roles (7) and role traits
+| Role | Heroes | Job | Role trait (shared by both heroes) |
+|---|---|---|---|
+| Tank | Bulwark, Butcher | Start fights, soak, peel | — |
+| Fighter | Blademaster, Ravager | Win long melee fights, side-lane | — |
+| Assassin | Shade, Viper | Kill the backline | — (each has its own: Shadow Reset / Poison) |
+| Mage | Pyra, Stormcaller | Area damage and control from range | **Line of Sight** (section 3) |
+| Marksman | Frostbow, Deadeye | Ranged Attack damage, weak early, strong late | **Twin Shot**: Attack hits twice (6.2) |
+| Support | Lumen, Tidesinger | Heal, shield, save allies | — |
+| Initiator | Quake, Bramblehorn | Open teamfights with area stuns | — |
+
+Deadeye also has **Line of Sight** as a hero trait (a sniper needs a clear shot). Difficulty (for the draft UI, 10.2,
+and onboarding, section 14): **★ Easy**: Bulwark, Blademaster, Ravager, Frostbow, Lumen · **★★**: Butcher, Viper, Pyra,
+Deadeye, Tidesinger, Quake, Bramblehorn · **★★★**: Shade (reset timing), Stormcaller (chains, knockback, LoS).
+
+### 10.2 Hero draft (r3, Eddie's request: pick order by priority)
+Before round 1 the lobby picks heroes. **Heroes are unique across both teams** (no mirror picks). The draft is public:
+every lock-in is shown to both teams at once; a player's *hover* (not yet locked) is shown to their teammates only.
+
+**Pick modes** (lobby setting):
+| Mode | How | Default on |
+|---|---|---|
+| **Draft** | Snake order below, one pick at a time | The Rift, Twin Hollow |
+| **Free pick** | Everyone picks at the same time; first to lock a hero gets it; same timer | (custom lobbies) |
+| **All random** | Seeded draw from the pool, unique heroes, no role balancing (the "all random" tradition) | **Frost Bridge** (11.3) |
+
+**Snake pick order:** Azure (team 1) has **first pick**, then the teams alternate **2 picks each**, and the last pick is a
+single. Order = `A`, then `BB`, `AA`, `BB`, … until both teams are full (the prototype's `draftOrder(n)` gives exactly this).
+
+| Size | Order | Picks | Heroes left to choose from at the last pick | Never picked |
+|---|---|---|---|---|
+| 1v1 | A B | 2 | 13 | 12 |
+| 2v2 | A BB A | 4 | 11 | 10 |
+| 3v3 | A BB AA B | 6 | 9 | 8 |
+| 4v4 | A BB AA BB A | 8 | 7 | 6 |
+
+Why snake: the first pick takes the strongest/most-wanted hero, and the other team answers with two (veterans know it
+from ranked drafts). The last pick sees the most and can counter-pick.
+
+- **Which seat picks:** the next seat of that team **that has not picked yet, in seat order** (seat 1 → seat 4; set in
+  the lobby, where players may swap seats before the draft starts). Whether a team may choose which teammate takes each
+  pick is **OPEN Q14**.
+- **Pool check (14 heroes, 2 per role):** at 4v4 the 8th pick still chooses from 7 heroes. Because every role has 2
+  heroes, both teams can always get one hero of any role they still want: `docs/design/sim/draft.py`, 4,000 bot-rule
+  drafts per size: **0% of drafts** deny a team a wanted role (Tank, Mage, Marksman, Support), also when the other team
+  takes the last hero of a role on purpose (denying costs it a duplicate role).
+- **Bots draft** to fill missing roles, in this priority: **Tank, Mage, Marksman, Support, Fighter, Initiator,
+  Assassin** (first role the team lacks that still has a free hero; random hero within the role, bot RNG stream; if every
+  role is covered, any free hero). Same rule as the prototype's `botDraftHero`. A bot picks at once (UX may add a 1–2 s
+  reveal delay).
+- **Pick timer (online):** **30 s per pick** (45 s in learning lobbies; none in hotseat or vs bots only). On timeout the
+  seat locks its **hovered** hero if it is still free, otherwise it gets the **bot rule** pick. A disconnected player is
+  auto-picked the same way.
+- **After the last pick:** 10 s team view (both line-ups, roles, recommended items), then round 1. No hero swaps in v1.
+- **First pick:** Azure in v1 (lobby seat). Whether first pick should alternate between matches or be a coin flip is
+  **OPEN Q16**. **Bans** are **OPEN Q15** (not in v1; numbers there).
+- **Determinism:** the draft is part of the match record: seed + pick list replays it (section 13).
+
+### 10.3 Hero cards
+In role order; the r3 hero follows its role partner.
 
 ### Bulwark — Tank · HP 16 · ATK 2 · RNG 1 · ARM 2 · SPD 3
 MOBA reference: *sun-shield vanguard — walks in first, point-blank stun, area-stun ultimate.*
@@ -358,6 +473,16 @@ MOBA reference: *spinning juggernaut duelist — wins long fights, flurry finish
 | W | Battle Cry | +1 ATK this activation and move 1 hex now. | 2 |
 | E | Decisive Strike | Adjacent enemy: 3 dmg, **Silence**. | 2 |
 | R | Omnislash | Teleport adjacent to an enemy within 3: 6 dmg (deterministic; v0.3's random targets removed). | 4 |
+
+### Ravager — Fighter · HP 15 · ATK 2 · RNG 1 · ARM 1 · SPD 3
+MOBA reference: *axe-swinging juggernaut — sticks to you, heals by cleaving, executes the wounded.* (vs Blademaster:
+sustain and slows instead of teleport burst.)
+| Key | Ability | Effect | CD |
+|---|---|---|---|
+| Q | Cleave | 2 dmg to every adjacent enemy; **heal 2 per enemy hero hit**. Wave 2. | 1 |
+| W | Hamstring | Adjacent enemy: 2 dmg, **Slow (2)** (2 activations). | 2 |
+| E | Leap | **Jump 3** (6.8) to a free hex: 1 dmg + **Slow** to each adjacent enemy where you land. Wave 1. | 2 |
+| R | Guillotine | Adjacent enemy: 3 dmg **+ 2 per 5 missing HP** (40%, 6.9). | 4 |
 
 ### Shade — Assassin · HP 10 · ATK 3 · RNG 1 · ARM 0 · SPD 4
 **Trait — Shadow Reset:** once per activation, when your **Q, W or E** scores a **reset kill**, you get **+1 action**
@@ -400,8 +525,22 @@ at ≤ 2). The v1.0-draft flat "≤ 4 HP" rule was 8 HP; v0.3's 35% would be 8 H
   Mark a second squishy from **11 HP** (of 14) at level 3; from 20 HP (of 20, i.e. full) at level 5 with 3 items. Without the
   reset the second KO needs ≤ 9 / ≤ 16 HP.
 
+### Viper — Assassin · HP 10 · ATK 2 · RNG 1 · ARM 0 · SPD 4
+**Hero trait — Poison** (6.9): her abilities put **Poison n** on enemy heroes: n damage at the start of each of the
+target's next 3 activations. MOBA reference: *venomous stalker — bites, slips away, lets the poison finish the job.*
+(vs Shade: damage over time instead of burst and execute; no Shadow Reset.)
+| Key | Ability | Effect | CD |
+|---|---|---|---|
+| Q | Venom Fang | Adjacent enemy: 2 dmg, **Poison 1**. | 1 |
+| W | Toxic Cloud | Target hex within 3, radius 1: **Poison 1** + **Slow** to each enemy hero. Wave 2. | 2 |
+| E | Slither | **Free.** **Dash 3** (6.8). | 3 |
+| R | Kiss of Death | Enemy within 2: 3 dmg, **Silence**, **Poison 3**. | 4 |
+
+Counterplay is built in: Poison is public (token + pips), Riptide / Cleansing Veil cleanse it, and recalling clears it.
+A level-3 Kiss of Death is 3 now + 9 over three turns: the target has one activation to get out or get cleansed.
+
 ### Pyra — Mage · HP 10 · ATK 1 · RNG 2 · ARM 0 · SPD 3
-**Trait — Line of Sight:** every Attack and ability needs LoS (section 3) **to its target**: the enemy, or for Fireball
+**Role trait (Mage) — Line of Sight:** every Attack and ability needs LoS (section 3) **to its target**: the enemy, or for Fireball
 the **target hex** (the 6 neighbors are then hit without further LoS checks). Walls block; units do not. Attacking the
 enemy wave needs LoS to the Front hex. MOBA reference: *burst fire mage — area poke, point-and-click nuke.*
 | Key | Ability | Effect | CD |
@@ -417,14 +556,35 @@ jungle walls, river walls, the Twin Hollow pit walls) while open-lane trades sta
 in the lane, so LoS barely matters there. Fallback if she still feels too safe after a playtest: **Pyroblast range 4 → 3**
 (then nothing she has out-ranges Frostbow's Attack). Listed in 16.4.
 
+### Stormcaller — Mage · HP 10 · ATK 1 · RNG 2 · ARM 0 · SPD 3
+**Role trait (Mage) — Line of Sight:** as Pyra (only the first target of Chain Lightning and the target hex of an area need it).
+MOBA reference: *storm controller — bouncing lightning, area silence, blows divers away.* (vs Pyra: control over burst.)
+| Key | Ability | Effect | CD |
+|---|---|---|---|
+| Q | Chain Lightning | Enemy within 3 **in LoS**: 3 dmg, **Chain 2** (6.9): each jump 2 dmg (≈ 70%). Wave 1 (if a jump or the first hit is the wave). | 1 |
+| W | Static Field | Target hex within 3 **in LoS**, radius 1: 1 dmg + **Silence** to each enemy. Wave 2. | 3 |
+| E | Gust | Line 3: first enemy hero hit takes 1 dmg and is **knocked back 2** (6.8). | 2 |
+| R | Thunderstorm | Target hex within 4 **in LoS**, **radius 2**: 3 dmg to each enemy. Wave 3. | 4 |
+
 ### Frostbow — Marksman · HP 10 · ATK 2 · RNG 3 · ARM 0 · SPD 3
-**Trait — Twin Shot:** your Attack action hits twice. MOBA reference: *frost-arrow marksman — kites with slows, long stun arrow.*
+**Role trait (Marksman) — Twin Shot:** your Attack action hits twice. MOBA reference: *frost-arrow marksman — kites with slows, long stun arrow.*
 | Key | Ability | Effect | CD |
 |---|---|---|---|
 | Q | Volley | Target hex within 3 and neighbors: 1 dmg + **Slow** to each enemy. Wave 3. | 2 |
 | W | Frost Arrows | This activation: your Attacks deal +1 and **Slow**. | 2 |
 | E | Tumble | Move 2 hexes (may pass through enemies). | 2 |
 | R | Crystal Arrow | Line 6: first enemy hero hit takes 3 dmg, **Stun**. | 4 |
+
+### Deadeye — Marksman · HP 9 · ATK 2 · RNG 4 · ARM 0 · SPD 3
+**Role trait (Marksman) — Twin Shot:** your Attack action hits twice. **Hero trait — Line of Sight** (section 3) on every
+Attack and ability. MOBA reference: *long-range sniper — out-ranges everyone, snares divers, cross-map finishing shot.*
+(vs Frostbow: longest basic range in the game but fragile and needs clear lines; Frostbow kites with slows.)
+| Key | Ability | Effect | CD |
+|---|---|---|---|
+| Q | Piercing Shot | Line 5: **every** enemy on it takes 1 dmg. Wave 2. | 2 |
+| W | Snare Trap | Enemy within 4 **in LoS**: 1 dmg, **Root**. | 2 |
+| E | Rocket Jump | **Free.** **Jump 3** (6.8). | 3 |
+| R | Headshot | Enemy hero within 7 **in LoS**: 5 dmg **reduced by ARM** (min 1) like an Attack — it is a shot (the "physical" nuke; Piercing Edge applies). | 4 |
 
 ### Lumen — Support · HP 11 · ATK 1 · RNG 2 · ARM 0 · SPD 3
 MOBA reference: *enchanter healer — keeps the carry alive, roots divers, global heal.*
@@ -435,6 +595,16 @@ MOBA reference: *enchanter healer — keeps the carry alive, roots divers, globa
 | E | Barrier | Ally (or you) within 3: **Shield 3**. | 1 |
 | R | Wish | Every allied hero, anywhere: heal 4. | 4 |
 
+### Tidesinger — Support · HP 12 · ATK 1 · RNG 2 · ARM 0 · SPD 3
+MOBA reference: *tide-priestess protector — bubbles divers, cleanses and speeds allies, wave ultimate.* (vs Lumen: peel
+and mobility instead of raw healing.)
+| Key | Ability | Effect | CD |
+|---|---|---|---|
+| Q | Bubble | Enemy within 3: 1 dmg, **Stun**. | 2 |
+| W | Riptide | Ally (or you) within 3: heal 2, **Cleanse** (6.9). | 2 |
+| E | Current | Ally (or you) within 4: **Shield 1** and **Haste** (+2 SPD, 6.9). | 2 |
+| R | Tidal Wave | Every enemy within 2 of you: 2 dmg + **Slow**; every allied hero within 2 (you included): heal 3. Wave 2. | 4 |
+
 ### Quake — Initiator · HP 13 · ATK 2 · RNG 1 · ARM 1 · SPD 3
 MOBA reference: *fissure-and-echo initiator — line stun, then one huge slam in the crowd.*
 | Key | Ability | Effect | CD |
@@ -444,25 +614,54 @@ MOBA reference: *fissure-and-echo initiator — line stun, then one huge slam in
 | E | Tremor | 1 dmg + **Slow** to every adjacent enemy. Wave 2. | 1 |
 | R | Echo Slam | Every enemy within 2: 2 dmg, +1 per other enemy unit in range (heroes and minions, max +3). Wave 3. | 4 |
 
+### Bramblehorn — Initiator · HP 15 · ATK 2 · RNG 1 · ARM 2 · SPD 3
+MOBA reference: *armored horn-charger — tosses one target, shields the team, drags the whole fight together.* (vs Quake:
+durable front-liner whose ultimate groups enemies for an ally's area spell.)
+| Key | Ability | Effect | CD |
+|---|---|---|---|
+| Q | Horn Toss | Adjacent enemy: 2 dmg, **knocked back 1** (6.8), **Stun**. | 2 |
+| W | Thick Hide | **Shield 3** on yourself. | 2 |
+| E | War Bellow | **Free.** Every allied hero within 2 (you included): **Shield 2** (does not stack with another Shield: keep the higher). | 3 |
+| R | Earthshaker | Target hex within 3, **radius 2**: **pull every enemy hero to the centre** (6.8), then 2 dmg + **Stun** to each enemy in the area. Wave 3. | 4 |
+
 ### Time-to-kill (sim, `docs/design/sim/ttk.py`)
 Activations a hero needs to KO a target from full HP, using its best damage each activation (2 abilities + Attack),
 no shields/heals/teammates. Level 5 assumes the 3-item bot build.
 
-| Attacker → target | Squishy L1 (Shade/Pyra/Frostbow) | Tank L1 (Bulwark) | Squishy L5 | Tank L5 |
-|---|---|---|---|---|
-| Blademaster | 2 | 4 | 2 | 4 |
-| Shade | 2 | 4 | 2 | 3 |
-| Pyra | 2 | 3 | 2 | 3 |
-| Frostbow | 3 | 7 | **1** | 3 |
-| Butcher | 3 | 5 | 2 | 5 |
-| Quake | 3 | 7 | 3 | 5 |
-| Bulwark | 3 | 7 | 3 | 7 |
-| Lumen | 7 | 9+ | 5 | 9+ |
+| Attacker → target | Squishy L1 (Shade/Pyra/Frostbow) | Tank L1 (Bulwark) | Squishy L5 | Tank L5 | Avg vs all 14 (L1 / L3 / L5) |
+|---|---|---|---|---|---|
+| Blademaster | 2 | 4 | 2 | 4 | 2.5 / 2.5 / 2.6 |
+| **Ravager** | 2 | 4 | 2 | 5 | 2.8 / 3.0 / 2.8 |
+| Shade | 2 | 4 | 2 | 3 | 2.6 / 2.7 / 2.2 |
+| **Viper** (incl. Poison ticks) | 2 | 4 | 2 | 3 | 3.0 / 2.4 / 2.2 |
+| Pyra | 2 | 3 | 2 | 3 | 2.6 / 2.6 / 2.4 |
+| **Stormcaller** | 2 | 4 | 2 | 3 | 2.9 / 3.4 / 2.4 |
+| Frostbow | 3 | 7 | **1** | 3 | 4.3 / 4.0 / 1.8 |
+| **Deadeye** | 2 | 5 | **1** | 3 | 3.4 / 3.4 / 1.8 |
+| Butcher | 3 | 5 | 2 | 5 | 3.6 / 3.6 / 3.5 |
+| Quake | 3 | 7 | 3 | 5 | 4.7 / 5.3 / 4.1 |
+| **Bramblehorn** | 3 | 9+ | 3 | 9+ | 5.1 / 5.7 / 5.7 |
+| Bulwark | 3 | 7 | 3 | 7 | 4.3 / 4.1 / 4.6 |
+| Lumen | 7 | 9+ | 5 | 9+ | 7.9 / 9.0 / 7.2 |
+| **Tidesinger** | 7 | 9+ | 3 | 7 | 7.9 / 7.9 / 5.2 |
+
+**As targets** (average activations the 12 non-support heroes need to KO them, L1 / L5): Ravager 4.8 / 3.6 (Blademaster
+4.3 / 3.5) · Viper 2.4 / 2.1 (Shade 2.4 / 2.1) · Stormcaller 2.4 / 2.5 (Pyra 2.4 / 2.5) · **Deadeye 2.2 / 1.8, the
+easiest kill in the game** (Frostbow 2.4 / 2.1) · Tidesinger 3.0 / 2.7 (Lumen 2.9 / 2.7) · Bramblehorn 4.8 / 4.4 (Quake
+4.2 / 3.4, Bulwark 5.2 / 4.4).
 
 Reading: early fights take 2–3 activations (one round for a duo, so there is time to react or recall); tanks take
-twice as long; Frostbow is weak early and deletes squishies late — the marksman curve veterans expect. **Watch:**
-Frostbow one-shots a full-HP squishy at level 5 with 3 damage items (see 16.4). The table ignores geometry, so Pyra's LoS
-does not show here; it only removes targets, never damage.
+twice as long; marksmen are weak early and delete squishies late — the curve veterans expect. **Watch:**
+Frostbow and Deadeye one-shot a full-HP squishy at level 5 with 3 damage items (see 16.4). Ravager, Viper and
+Stormcaller land within 0.5 activations of their role partner at levels 1 and 5 (Stormcaller is 0.8 slower at level 3:
+control over burst). Deadeye shows 0.9 faster than Frostbow at level 1, but the table leaves out Frost Arrows, so they
+are about even early and equal late. Bramblehorn has the lowest non-support damage (he trades it for ARM 2, two shields
+and the biggest stun area); Tidesinger deals more than Lumen and heals much less. The table
+ignores geometry (LoS only removes targets, never damage), heals and shields (Ravager's Cleave heal, Bramblehorn's
+shields), slows, forced movement and Frost Arrows' +1 (so Frostbow is ~1 activation faster early than shown).
+Viper's Poison is counted when it ticks, in the target's activation. Numbers tuned with `ttk.py`: Chain Lightning 2 → 3,
+Horn Toss 1 → 2, Piercing Shot 2 → 1, and **POW not added to Poison** (with POW, level-5 Viper averaged 1.9, the
+strongest attacker in the game).
 
 **Shade, r2 rules** (`python3 docs/design/sim/ttk.py`, `shade_report`): largest *current* HP Shade KOs in one activation
 (Shadow Step + best of Shuriken/Attack + Death Mark + execute), by execute rule:
@@ -531,7 +730,7 @@ y5        +       ·           #       +
 y6   ########################################
 ```
 - Nodes −4 … +4. Towers on ±2 (outer) and ±3 (inner). Core on ±4. No jungle, no objectives.
-- **No recall**, 2 health relics per side. Heroes are drawn at random by default (seeded). Start at level 3 with 6 gold;
+- **No recall**, 2 health relics per side. Heroes are drawn at random by default (seeded; **All random** pick mode, 10.2; the lobby can switch to Draft). Start at level 3 with 6 gold;
   level 4 at round 3, level 5 at round 5. 8 rounds.
 
 ---
@@ -545,7 +744,9 @@ The rules are designed so a bot can be a short list of scored plans instead of a
 | `LegalActions(state, hero)` with a **preview** (damage, KOs, Front change, gold) for each | No bot-side re-implementation of rules; bots score previews. |
 | `LaneForecast(state, lane)`: Power each side, who wins the next clash, Front change, tower damage | One function answers "is my lane safe / should I push". |
 | `Threat(state, hex, team)`: max damage enemies can deal to that hex next activation, incl. tower dive rule and Pyra's LoS | Retreat/recall decisions = one lookup. |
-| `HasLineOfSight(state, fromHex, toHex)` (section 3) | Bots hide behind walls from Pyra with one call; same function the UI uses. |
+| `HasLineOfSight(state, fromHex, toHex)` (section 3) | Bots hide behind walls from Pyra, Stormcaller and Deadeye with one call; same function the UI uses. |
+| Previews include **final hexes of forced movement** (knockback, pull, pull to centre), **Poison** total over 3 turns, **Chain** jump targets, Guillotine's missing-HP total | Bots score Gust-into-tower, Earthshaker + area spell, Poison kills without re-implementing 6.8/6.9. |
+| `DraftState`: order, current seat, free heroes, each team's roles; `BotDraftPick(state, seat)` (10.2 rule) | Bot draft, timeout auto-pick and the UI's "suggested pick" are the same function. |
 | Previews flag Shadow Reset (`grantsAction: true`) | The bot plans Shade's 4th action without simulating the rule. |
 | Public state only: VP, round, levels, cooldowns, items, conditions, neutral HP and timers | No hidden info; bots and humans see the same. |
 | Seeded RNG stream for bot tie-breaks (separate from game RNG) | Same seed → same bot moves → replayable tests. |
@@ -560,7 +761,8 @@ fight · **Kill** if a preview KOs a hero · **Objective** if up and enemies are
 - **Readable state:** per lane only (Front node, Azure wave, Ember wave); per hero (hex, HP, conditions, cooldowns, items);
   per structure HP; per neutral HP and timer; VP, round. Everything is an integer.
 - **Deterministic:** no dice, no crits, no random targets. RNG (seeded, one stream) only for: round-1 starting team,
-  Frost Bridge hero draw, bot tie-breaks (separate stream). Match = seed + ordered action list → exact replay.
+  All random hero draw (10.2), bot tie-breaks and bot draft picks (separate stream). Match = seed + ordered pick list +
+  ordered action list → exact replay.
 - **Resolution order is fixed:** Lane phase resolves lanes in a fixed order (Top/Mid/Bot or Top/Bot); within a lane steps 1–5.
 - **Duo turns online:** both allies' actions go to the host; each is validated and applied in arrival order and broadcast.
   An action invalidated by the partner's earlier action is rejected with a reason (e.g. "hex now occupied"). Needs: NET.
@@ -573,6 +775,16 @@ fight · **Kill** if a preview KOs a hero · **Objective** if up and enemies are
 
 Tutorial = a real 1v1 on The Rift vs an Easy bot with Mid lane only active for rounds 1–3 (other lanes unlock at round 4).
 One new idea per round; the match continues normally after the script. Needs: UX (screens, prompts), BOTS (scripted Easy bot).
+
+**Draft for new players (r3).** The tutorial has no draft: the player chooses from the 5 **★ Easy** heroes (10.1: Bulwark,
+Blademaster, Ravager, Frostbow, Lumen) on one screen; the Easy bot gets Pyra. From the first real match on, the draft
+screen helps without adding rules:
+- A **"Recommended"** filter (on by default for a player's first 5 matches) shows the ★ Easy heroes first, with a
+  "Good first pick" badge; every hero card shows its difficulty stars, role and a one-line job (10.1 table).
+- A **"Your team needs"** hint names the roles your team lacks, in the bot priority order (Tank, Mage, Marksman,
+  Support, …) and highlights the free heroes that fill them; "Suggested" = what the bot rule would pick.
+- Learning lobbies use a 45 s pick timer; a timeout locks your hover or the suggested pick, never a random hero.
+- One-line draft prompt in the first draft: "Pick order: one, then two each. Heroes are unique; fill what your team lacks."
 
 | Round | Teaches | Prompt (≤ 1 line) |
 |---|---|---|
@@ -598,10 +810,13 @@ ROUND 1 Start: +1 gold, level-ups.  2 Heroes alternate (trailing team picks who 
 YOUR TURN  3 actions, each once (Move may be twice):
       Move (SPD hexes) · Attack (ATK − armor) · Q / W / E / R (off cooldown) · [Capture altar]
       Free: Recall (ends turn; home next turn, full heal, cancelled by damage) · Shop (in base).
-      Frostbow: Attack hits twice.   Shade: once per turn, Q/W/E KOs a hero, claims a neutral or wipes a wave → +1 action.
-LINE OF SIGHT  Pyra: everything needs a clear line to the target (hex). Walls block, units never do.
+      Free abilities don't use an action (once per turn, not while Stunned/Silenced).
+      Marksmen (Frostbow, Deadeye): Attack hits twice.   Shade: once per turn, Q/W/E KOs a hero, claims a neutral or wipes a wave → +1 action.
+LINE OF SIGHT  Mages (Pyra, Stormcaller) and Deadeye: everything needs a clear line to the target (hex). Walls block, units never do.
 DAMAGE  Attacks: ATK − ARM (min 1). Abilities: card number + POW, ignore armor. Shields soak first.
-CONDITIONS (your next turn)  Stun: 1 action · Root: no Move · Slow: SPD −2 · Silence: no abilities.
+CONDITIONS (your next turn; "(2)" = next 2 turns)  Stun: 1 action · Root: no Move · Slow: SPD −2 · Silence: no abilities.
+      Haste (buff): SPD +2.  Cleanse: removes conditions and Poison.  Poison n (Viper): lose n at the start of your next 3 turns; base clears it.
+MOVED  Knockback / pull: walls and units stop it; structures, neutrals and waves never move.
 LANE PHASE  Spawn 2 (3 from round 7) · Power = minions + your heroes within 2 of the Front ·
       more Power wins, loser loses the difference · loser wiped → Front moves 1 · at a tower: tower kills 2, rest hit it for 1 each.
 LAST HIT  Attack the enemy wave = kill 1 minion = 1 gold. "Wave N" abilities kill N.
@@ -610,6 +825,8 @@ TOWERS  Hurt a hero under an enemy tower → it shoots you for 3. Under it with 
 LEVELS  L2 round 3 · L3 round 5 (ultimate) · L4 round 7 · L5 round 9.
 KO     Skip your next turn, then respawn in base. Enemy +1 VP, killer +3 gold.
 SHOP   3 slots · Basic 3 gold · Upgrade 7 (4 if you own its basic).
+DRAFT  Snake: Azure 1, then 2 each, last pick single (4v4 A BB AA BB A). Heroes unique. 30 s per pick online.
+      Frost Bridge: all random.
 ```
 
 ---
@@ -625,7 +842,9 @@ SHOP   3 slots · Basic 3 gold · Upgrade 7 (4 if you own its basic).
   (learning) for single activations; 55 s / 80 s per duo slot; Lane phase 15 s + 5 s per lane. These are estimates, not
   playtest data.
 - Not modelled: hex geometry (range, lines, body-blocking, **line of sight**), the "no minion cover" tower shot, Hidden, Blink,
-  Shadow Reset (pacing results predate r2; `ttk.py` covers Shade's burst).
+  Shadow Reset (pacing results predate r2; `ttk.py` covers Shade's burst). **r3:** the pacing sim still draws from the
+  original 8 heroes; the six r3 heroes are only in `ttk.py` (`NEW` table) and the draft in `draft.py`. Their numbers are
+  within the original 8's damage range, so no pacing change is expected; re-run once CODE has them in `core/`.
 - Baseline: v0.3's own bot sim (`prototype-web/src/sim.js` engine, 30 games across maps/sizes): rounds 13–39,
   **26/30 reached overtime**.
 
@@ -681,6 +900,23 @@ SHOP   3 slots · Basic 3 gold · Upgrade 7 (4 if you own its basic).
 8. **Shadow Reset:** capped at +1 action per activation; only hero KO / neutral claim / wave wipe. Watch: how often it
    fires in lane (wave wipe) and whether double KOs in 3v3/4v4 teamfights feel like highlights or like a hard counter to
    low-HP recall.
+9. **r3 — expected strong: Deadeye.** RNG 4 Twin Shot out-ranges every Attack (Frostbow 3, Pyra 2) and Headshot reaches 7;
+   level 5 + items one-shots squishies like Frostbow (#2). She is the easiest kill in the game (9 HP, 1.8 activations at
+   L5) and needs LoS, so walls and divers are the answer. If she dominates lanes: Headshot range 7 → 5, then RNG 4 → 3.
+10. **r3 — expected strong: Earthshaker + an area spell.** Bramblehorn's radius-2 pull-to-centre + Stun sets up Thunderstorm,
+   Fireball, Solar Flare or Echo Slam on a whole team. That is the intended combo; watch 4v4 teamfights for wipes from
+   one duo turn. Fallback: Earthshaker's Stun only on heroes who end on the centre ring (radius 1).
+11. **r3 — expected strong at level 3–4: Viper.** Kiss of Death is 3 + 9 Poison on a 14-HP squishy, which is a KO unless
+   the target recalls, gets cleansed (Tidesinger, Cleansing Veil) or is healed. Average TTK 2.4 at L3 (Shade 2.7). Fallback:
+   Kiss of Death Poison 3 → 2. Also watch Toxic Cloud + Static Field / Bubble (cannot walk out).
+12. **r3 — expected weak: Bramblehorn's damage** (5.1–5.7 average activations to KO, worst non-support). Fine if he feels like
+   a tank-initiator; if he feels useless in lane, Earthshaker 2 → 3 or Horn Toss CD 2 → 1.
+13. **r3 — watch: Ravager's sustain.** Cleave (CD 1) heals 2 per hero hit (+POW): in a 2-hero brawl that is 4–6 HP per
+   round, which `ttk.py` ignores. If fighters never die in 2v2 side lanes: heal 1 per hero.
+14. **r3 — watch: Tidesinger's Bubble (Stun, CD 2, range 3).** Two supports now stun or root; with Lumen she also makes a
+   double-support peel line. Fine at 2 per role; watch hard-lock chains (Bubble → Horn Toss → Earthshaker).
+15. **Draft:** first-pick advantage is unmeasured (bots draft by role, not by strength). Track first-pick win rate in the
+   first playtests (Q16).
 
 ---
 
@@ -698,9 +934,13 @@ SHOP   3 slots · Basic 3 gold · Upgrade 7 (4 if you own its basic).
 | Q8 | **Denies** | (a) none *(draft)*; (b) Attack your own wave: kill 1 own minion, no gold, enemy can't last-hit it | **(a)** for v1.0; (b) is a veteran nicety that adds a rule. |
 | Q9 | **Frost Bridge recall** | (a) no recall, relics *(draft, genre-true)*; (b) recall like other maps | **(a)**; base still heals fully if you walk home, so Eddie's "base heals fully" holds everywhere. |
 | Q10 | **Tower dive damage** | (a) 3 flat *(draft)*; (b) 3, +1 at levels 3 and 5 | **(a)** until playtests show late dives are free. |
-| Q11 | **Who needs line of sight** (Pyra has it either way) | (a) Pyra only *(draft r2, matches the prototype patch)*: a hero trait; (b) every enemy-targeted ranged Attack and ability (RNG ≥ 2 or range ≥ 2), ally effects and globals (Mend, Barrier, Wish) exempt, Shadow Step keeps "ignores walls"; (c) everything that targets at range, allies included | **(b)**: one board rule is easier to learn than one hero's exception (goal 1), walls already stop Line abilities, and veterans expect walls to block shots. Cost: Frostbow and Lumen lose some shots; Pyra keeps the requested nerf as the longest-range caster. (a) is fine if Eddie wants LoS to be Pyra's identity. |
+| Q11 | **Who needs line of sight** (Pyra has it either way; r3: Mage role trait + Deadeye, so 3 of the 6 ranged heroes) | (a) LoS-trait heroes only *(draft r3: Pyra, Stormcaller, Deadeye; matches the prototype)*; (b) every enemy-targeted ranged Attack and ability (RNG ≥ 2 or range ≥ 2), ally effects and globals (Mend, Barrier, Wish) exempt, Shadow Step keeps "ignores walls"; (c) everything that targets at range, allies included | **(b)**: one board rule is easier to learn than one hero's exception (goal 1), walls already stop Line abilities, and veterans expect walls to block shots. Cost: Frostbow, Lumen and Tidesinger lose some shots; Pyra keeps the requested nerf as the longest-range caster. (a) is fine if Eddie wants LoS to be Pyra's identity. |
 | Q12 | **Shadow Reset trigger** | (a) hero KO, neutral claim, or wave wipe; once per activation *(draft r2)*; (b) any unit kill including a single last hit, once per activation (Eddie's literal wording; = 4 actions nearly every lane turn); (c) hero KOs only, uncapped (a reset per KO, cooldowns still limit her: at most Q and W can each KO once) | **(a)**: keeps the "kill → go again" moment on the plays that matter and stops the free farm-and-burst every round that (b) gives (+2/+4 burst, `ttk.py`). (c) is the purest assassin fantasy and cannot loop (2 resets max) but never fires in lane. |
 | Q13 | **Death Mark execute threshold** | (a) 20% of max HP, rounded down *(draft r2, prototype)*; (b) 15% | **(a)** first: at level 3 they are equal on squishies (≤ 2 HP); (b) only bites late (Pyra L5: 3 vs 4) and on tanks. Test (b) if the level-5 one-shot on carries feels unfair. |
+| Q14 | **Who takes each draft pick within a team** (10.2) | (a) next seat in seat order *(draft r3, prototype)*; players may swap seats in the lobby before the draft; (b) any teammate who has not picked may claim the team's pick (first to lock); (c) a captain (seat 1) assigns each pick | **(a) for v1** + lobby seat swap: no claim races online, works the same in hotseat and with bots. Add **hero trades after the draft** (two teammates swap picked heroes during the 10 s team view) later if players ask for (b): it gives the same freedom without a race. |
+| Q15 | **Bans** | (a) none *(draft r3)*; (b) 1 ban per team before the picks (A then B); (c) 2 bans per team | **(a) until the pool has 3 heroes per role (21).** `draft.py`, 4,000 bot-rule drafts: with 14 heroes, 1 ban per team leaves a team without a role it wants in **84%** of 4v4 drafts (2v2 50%, 3v3 70%; at the last 4v4 pick only 5 heroes remain), because a ban + an enemy pick wipes a 2-hero role. With 21 heroes, 1 ban per team → **6%** (2 bans: 31%). Then add (b) for ranked/custom lobbies. |
+| Q16 | **Who has first pick** | (a) Azure always (lobby side) *(draft r3, prototype)*; (b) seeded coin flip; (c) alternate between matches of the same lobby (rematch: the other team picks first); (d) coin flip for first pick, and the team **without** first pick chooses who starts round 1 (replaces the round-1 coin flip, section 4) | **(d)**, and **(c)** for rematches: first pick and round-1 initiative are both edges, so splitting them balances the match with no new rule; measure first-pick win rate in playtests (16.4 #15). |
+| Q17 | **Viper's damage over time** | (a) **Poison** as her hero trait, fixed number, POW not added *(draft r3)*; (b) bring back **Burn** as a 6th condition any hero can use; (c) Poison with POW added (level-5 Viper averages 1.9 activations to KO, strongest attacker) | **(a)**: keeps the 5-condition card (goal 1) and one tick moment (start of the poisoned hero's activation); (b) only if a second DoT hero is planned. |
 
 ---
 
@@ -731,7 +971,10 @@ SHOP   3 slots · Basic 3 gold · Upgrade 7 (4 if you own its basic).
 | Neutrals | HP grows +1/round; retaliate to aggro holder; heal 4/round | Fixed HP; Bite on the hitter; full heal if untouched; last hit claims | simplified |
 | Objectives | Drake +1 ATK/PWR team; Golem Aegis; Queen +2 for 8 rounds; altars +1 ATK/PWR & gold | Same identities + VP (2/3/3); altars give lane Power + gold | from Rum & Bones (VP) |
 | Frost Bridge | No recall, start lvl 3, 1100 gold, random heroes, overtime 16 | No recall, start lvl 3, 6 gold, random (seeded), 8 rounds | kept |
-| Heroes | 8 heroes, 4 abilities each, numbers in v0.3 scale | Same 8, same roles and ability identities, v1.0 numbers | kept, rescaled |
+| Heroes | 8 heroes, 4 abilities each, numbers in v0.3 scale | Same 8, same roles and ability identities, v1.0 numbers; r3: 14 heroes, 2 per role | kept, rescaled; r3 new |
+| Hero select | No draft (the prototype's later lead patch adds one) | Snake draft (A BB AA BB A), unique heroes, 30 s timer, bot role-fill; Free pick; All random (Frost Bridge default) | new (Eddie, r3) |
+| Role traits | Frostbow's free first Attack; Pyra LoS (patch) | Marksman: Twin Shot; Mage: Line of Sight (shared by both heroes of the role) | reshaped (r3) |
+| Effects | Knockback, pull, burn, cleanse, haste in prototype code, each with its own rule | One definition each: 6.8 (dash, jump, knockback, pull, pull to centre), 6.9 (cleanse, haste buff, missing-HP, chain, Poison); still 5 conditions | new (r3) |
 | Line of sight | None (prototype patch after v0.3: Pyra needs LoS, walls only) | Defined for the hex board; Pyra needs it for everything (Q11: everyone?) | new (Eddie playtest) |
 | Shade execute | Hero left under 35% HP (prototype patch: 20%) | 20% of max HP, rounded down (≤ 2 HP on a 14-HP squishy); 15% to test | Eddie playtest |
 | Shade reset | None (prototype patch: Q/W kill of any unit clears her "acted" flag, no cap) | Q/W/E hero KO, neutral claim or wave wipe → +1 action, once per activation | Eddie playtest, capped |
@@ -740,6 +983,17 @@ SHOP   3 slots · Basic 3 gold · Upgrade 7 (4 if you own its basic).
 - Pyra: line of sight on every Attack and ability (section 3 rule, section 10). Numbers unchanged; fallback Pyroblast 3.
 - Shade: Death Mark execute 20% of max HP (15% alternative); Shadow Reset trait with a once-per-activation cap.
 - New open questions Q11–Q13. Quick reference, bots API (section 12) and hand-offs updated.
+
+### 18.2 Revision r3 (Eddie: 2 heroes per role, hero draft)
+- Six heroes, one more per role, translated from the prototype into v1 numbers: Ravager, Viper, Stormcaller, Deadeye,
+  Tidesinger, Bramblehorn (section 10). Roles table with role traits and difficulty stars (10.1).
+- Twin Shot becomes the Marksman role trait (Frostbow + Deadeye); Line of Sight the Mage role trait (Pyra + Stormcaller),
+  plus Deadeye. Free abilities defined on hero cards (6.2).
+- New effects defined once: dash/jump/knockback/pull/pull-to-centre (6.8); cleanse, haste, missing-HP damage, chain, Poison
+  (6.9); condition durations "(2)" (6.6). Condition list stays at 5.
+- Hero draft: snake order, modes, seats, bot rule, timer (10.2); onboarding draft help (14); quick reference DRAFT line (15).
+- Balance: `ttk.py` extended to 14 heroes (table in section 10); `draft.py` new (pool and bans). Six new notes in 16.4,
+  new open questions Q14–Q17.
 
 ---
 
@@ -756,3 +1010,20 @@ SHOP   3 slots · Basic 3 gold · Upgrade 7 (4 if you own its basic).
 - **CODE (r2):** `HasLineOfSight` with unit tests (edge-grazing lines, units not blocking), Pyra targeting filtered by it,
   execute = maxHP / 5 integer division, Shadow Reset as an action-budget refund with a per-activation flag.
 - **NET:** duo turns (two clients acting at once), action log + seed replay, turn timers.
+- **CODE (r3):** draft phase before round 1 in `core/` (state: order, current seat, picks; `draftOrder(n)` as in 10.2;
+  uniqueness; modes Draft / Free pick / All random; timeout = hover or `BotDraftPick`); six heroes; Free abilities;
+  forced movement (6.8, with blocked-hex stops and the pull-to-centre resolution order); Cleanse, Haste buff, condition
+  durations, missing-HP damage, Chain, Poison tick at the start of the poisoned hero's activation after recall arrival
+  (6.9); Twin Shot and LoS as role traits; previews for all of these (section 12). Unit tests: knockback into wall/unit/edge,
+  pull-to-centre with 3 heroes and a blocked centre, Poison cleared by recall, Chain over a wave, Guillotine rounding.
+- **BOTS (r3):** draft by role priority (10.2); play the six heroes from previews (Gust/Horn Toss toward own tower,
+  Earthshaker when ≥ 2 heroes in radius 2, Riptide on a stunned ally, Kiss of Death on a healer/mage, keep Rocket Jump
+  for escape); respect Poison when deciding to recall. Suggestion: in 1v1 bots skip Tank/Support in the draft
+  (a tank-vs-tank duel is slow) — BOTS' call, Eddie to confirm.
+- **UX (r3):** draft screen — pick-order strip (A BB AA BB A with seat avatars, current pick highlighted), role filter
+  + "Recommended" filter, hero card (stats, 4 abilities, role trait, difficulty stars, MOBA one-liner), hover vs lock-in
+  button, 30 s timer ring, "Your team needs" hint (section 14), 10 s team view. Board: forced-move arrows in previews,
+  Poison token with 3 pips, Haste icon, chain jump lines.
+- **ASSETS (r3):** six hero miniatures in the existing style + their ability VFX (see CHANGELOG Needs).
+- **NET (r3):** draft sync (host-authoritative pick order and uniqueness, hover shown to teammates only), pick timer,
+  timeout/disconnect auto-pick, picks in the replay log.

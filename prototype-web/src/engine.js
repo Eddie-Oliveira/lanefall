@@ -176,8 +176,59 @@ const HEROES = {
       w: { n: 'Enchant Totem', type: 'self', quick: 1, cd: 3, buff: { tag: 'totem', dur: 1 }, d: 'Free action: your next basic attack this turn deals double damage.', tip: 'Totem, then attack. Great for last hits on towers.' },
       e: { n: 'Tremor', type: 'self', radius: 1, cd: 2, dmg: { b: 2, pwr: .5 }, mag: 1, slow: 1, d: 'Shake the ground: magic damage and slow to every adjacent enemy.', tip: 'Keeps enemies from escaping.' },
       r: { n: 'Echo Slam', type: 'self', radius: 2, cd: 7, dmg: { b: 3, pwr: .5 }, mag: 1, special: 'echo', d: 'Slam within 2 tiles: magic damage to every enemy, +2 more for each other enemy caught (minions count).', tip: 'Blink into the middle of the crowd first.' } } },
+
+  /* ---- second hero per class ---- */
+  ravager: { n: 'Ravager', i: '🪓', role: 'Fighter', hp: 40, atk: 4, rng: 1, mov: 3, arm: 1, res: 0, pwr: 1, g: { hp: 4, atk: 1, pwr: .3 },
+    about: 'Brawler who heals by cleaving heroes, then finishes the wounded with a heavy axe.',
+    build: ['long_sword','boots','hammer','spiked','treads','plate','vamp','guardian'],
+    ab: {
+      q: { n: 'Cleave', type: 'self', radius: 1, cd: 2, dmg: { b: 2, atk: .7 }, special: 'cleave', d: 'Hit every adjacent enemy. Heal 3 for each hero hit.', tip: 'Stand next to two of them and sustain.' },
+      w: { n: 'Hamstring', type: 'enemy', range: 1, cd: 3, dmg: { b: 2, atk: .5 }, slow: 2, d: 'Cut an adjacent enemy: damage and slow for 2 turns.', tip: 'They can\'t run from you after this.' },
+      e: { n: 'Leap', type: 'dash', range: 3, cd: 4, dmg: { b: 2, atk: .5 }, radius: 1, slow: 1, d: 'Jump to a free tile up to 3 away. Enemies next to where you land take damage and are slowed.', tip: 'Engage over a minion wave.' },
+      r: { n: 'Guillotine', type: 'enemy', range: 1, cd: 6, dmg: { b: 5, atk: 1 }, special: 'missing', d: 'Execute swing on an adjacent enemy: damage plus 40% of its missing HP.', tip: 'The lower they are, the harder it hits.' } } },
+  viper: { n: 'Viper', i: '🐍', role: 'Assassin', hp: 30, atk: 4, rng: 1, mov: 4, arm: 0, res: 1, pwr: 3, g: { hp: 3, atk: .6, pwr: .7 },
+    about: 'Poison assassin. Stacks burns that ignore armor, then slips away before the target drops.',
+    build: ['tome','boots','long_sword','treads','staff','blink','guardian','vamp'],
+    ab: {
+      q: { n: 'Venom Fang', type: 'enemy', range: 1, cd: 2, dmg: { b: 2, atk: .5 }, burn: { b: 1, pwr: .4, t: 3 }, d: 'Bite an adjacent enemy: damage and poison (burn) for 3 turns.', tip: 'Bite, then walk away. The poison does the rest.' },
+      w: { n: 'Toxic Cloud', type: 'tile', range: 3, radius: 1, cd: 3, slow: 1, burn: { b: 1, pwr: .3, t: 2 }, d: 'Release a 3×3 cloud up to 3 tiles away: poison and slow everything inside.', tip: 'Great on a minion wave with a hero in it.' },
+      e: { n: 'Slither', type: 'dash', range: 3, quick: 1, cd: 3, d: 'Free action: slide to a free tile up to 3 away.', tip: 'Escape after the bite, or close the gap first.' },
+      r: { n: 'Kiss of Death', type: 'enemy', range: 2, cd: 6, dmg: { b: 4, pwr: 1 }, mag: 1, silence: 1, burn: { b: 3, pwr: .5, t: 3 }, d: 'Magic damage to an enemy up to 2 away, silence it for 1 turn and poison it heavily for 3 turns.', tip: 'Silence the healer or the mage before the fight.' } } },
+  stormcaller: { n: 'Stormcaller', i: '⚡', role: 'Mage', los: 1, hp: 28, atk: 2, rng: 2, mov: 3, arm: 0, res: 1, pwr: 4, g: { hp: 3, atk: .3, pwr: 1 },
+    about: 'Control mage. Chains lightning between enemies and blows divers away. Needs line of sight.',
+    build: ['tome','boots','mantle','staff','treads','veil','guardian','ruby'],
+    ab: {
+      q: { n: 'Chain Lightning', type: 'enemy', range: 3, cd: 2, dmg: { b: 2, pwr: .7 }, mag: 1, special: 'chain', d: 'Strike an enemy up to 3 away; the bolt jumps to up to 2 more enemies within 2 tiles of the last one (70% damage).', tip: 'Best into a crowd of minions with a hero inside.' },
+      w: { n: 'Static Field', type: 'tile', range: 3, radius: 1, cd: 4, dmg: { b: 1, pwr: .4 }, mag: 1, silence: 1, d: 'Charge a 3×3 area up to 3 tiles away: magic damage and silence 1 turn.', tip: 'Stops their whole team from casting.' },
+      e: { n: 'Gust', type: 'line', range: 3, cd: 3, dmg: { b: 1, pwr: .3 }, mag: 1, knock: 2, d: 'A blast of wind in a straight line. The first enemy hit takes damage and is knocked back 2 tiles.', tip: 'Push a diver off you, or into your tower.' },
+      r: { n: 'Thunderstorm', type: 'tile', range: 4, radius: 2, cd: 6, dmg: { b: 4, pwr: 1 }, mag: 1, d: 'Call a storm on a 5×5 area up to 4 tiles away: heavy magic damage to every enemy inside.', tip: 'Wait until they group up for the drake.' } } },
+  deadeye: { n: 'Deadeye', i: '🎯', role: 'Marksman', freeAttack: 1, los: 1, hp: 26, atk: 5, rng: 4, mov: 3, arm: 0, res: 0, pwr: 1, g: { hp: 3, atk: 1, pwr: .3 },
+    about: 'Sniper with the longest range. First basic attack each turn is free. Needs line of sight.',
+    build: ['long_sword','boots','blade','treads','vamp','guardian','hammer','plate'],
+    ab: {
+      q: { n: 'Piercing Shot', type: 'line', range: 5, pierce: 1, cd: 3, dmg: { b: 1, atk: .8 }, d: 'A shot in a straight line (5 tiles) that hits every enemy on it.', tip: 'Line up the wave and the hero behind it.' },
+      w: { n: 'Snare Trap', type: 'enemy', range: 4, cd: 4, dmg: { b: 1 }, root: 1, d: 'Throw a snare at an enemy up to 4 away: small damage and root (no moving) for 1 turn.', tip: 'Root, then shoot. They can\'t step out of range.' },
+      e: { n: 'Rocket Jump', type: 'dash', range: 3, quick: 1, cd: 4, d: 'Free action: jump to a free tile up to 3 away.', tip: 'Your only escape. Keep it for divers.' },
+      r: { n: 'Headshot', type: 'enemy', range: 7, cd: 6, dmg: { b: 6, atk: 1.5 }, d: 'Aimed shot at an enemy up to 7 tiles away: heavy physical damage.', tip: 'Cross-map finisher. Needs a clear line.' } } },
+  tidesinger: { n: 'Tidesinger', i: '🌊', role: 'Support', hp: 32, atk: 2, rng: 2, mov: 3, arm: 0, res: 1, pwr: 4, g: { hp: 3, atk: .3, pwr: 1 },
+    about: 'Protective support. Bubbles divers, cleanses and speeds up allies, and turns teamfights with a wave.',
+    build: ['tome','boots','ruby','veil','treads','staff','guardian','mantle'],
+    ab: {
+      q: { n: 'Bubble', type: 'enemy', range: 3, cd: 4, dmg: { b: 1, pwr: .3 }, mag: 1, stun: 1, d: 'Trap an enemy up to 3 away in a bubble: small magic damage and a 1-turn stun.', tip: 'Bubble the assassin the moment they jump in.' },
+      w: { n: 'Riptide', type: 'ally', range: 3, cd: 3, heal: { b: 3, pwr: .7 }, special: 'cleanse', d: 'Heal an allied hero (or yourself) up to 3 away and remove stun, root, slow, silence and burn.', tip: 'Free your carry from a stun.' },
+      e: { n: 'Current', type: 'ally', range: 4, cd: 3, shield: { b: 2, pwr: .5 }, special: 'haste', d: 'An allied hero (or you) up to 4 away gains a small shield and +2 MOV this turn and next.', tip: 'Speed the tank in, or the carry out.' },
+      r: { n: 'Tidal Wave', type: 'self', radius: 2, cd: 7, dmg: { b: 3, pwr: .8 }, mag: 1, heal: { b: 4, pwr: .8 }, special: 'wave', slow: 1, d: 'A wave around you (2 tiles): magic damage and slow to enemies, heals every allied hero inside.', tip: 'Stand in the middle of the fight first.' } } },
+  bramblehorn: { n: 'Bramblehorn', i: '🦏', role: 'Initiator', hp: 40, atk: 4, rng: 1, mov: 3, arm: 2, res: 0, pwr: 2, g: { hp: 5, atk: .5, pwr: .6 },
+    about: 'Armored charger. Tosses one enemy, shields the team, then drags a whole group together.',
+    build: ['ruby','boots','cloth','blink','treads','plate','spiked','guardian'],
+    ab: {
+      q: { n: 'Horn Toss', type: 'enemy', range: 1, cd: 3, dmg: { b: 2, atk: .5 }, stun: 1, knock: 1, d: 'Toss an adjacent enemy 1 tile back and stun it for 1 turn.', tip: 'Toss them toward your team or your tower.' },
+      w: { n: 'Thick Hide', type: 'self', cd: 3, shield: { b: 5, pwr: 1 }, d: 'Gain a shield until the end of your next turn.', tip: 'Shield, then walk under their tower.' },
+      e: { n: 'War Bellow', type: 'self', radius: 2, quick: 1, cd: 4, special: 'roar', d: 'Free action: every allied hero within 2 tiles (you included) gains a 3 HP shield.', tip: 'Shout right before the fight starts.' },
+      r: { n: 'Earthshaker', type: 'tile', range: 3, radius: 1, cd: 6, dmg: { b: 3, pwr: .8 }, mag: 1, stun: 1, special: 'vortex', d: 'Slam a 3×3 area up to 3 tiles away: pull every enemy inside to the centre, deal magic damage and stun 1 turn.', tip: 'Pull them together for your mage\'s ultimate.' } } },
 };
 const HERO_KEYS = Object.keys(HEROES);
+const ROLES = ['Tank', 'Fighter', 'Assassin', 'Mage', 'Marksman', 'Support', 'Initiator'];
 const XPL = [0, 3, 7, 12, 18, 25];
 const AB_KEYS = ['q', 'w', 'e', 'r'];
 
@@ -407,7 +458,15 @@ function abHits(G, u, k, tx, ty, from) {
         if (!(t.kind === 'minion' || (t.kind === 'neutral' && t.ntype === 'camp'))) return null;
         if (t.hp > 12 + 2 * stat(G, u, 'pwr')) return null;
         R.hits.push({ u: t, dmg: t.hp, true: 1 }); R.heals.push({ u, amt: 6 });
-      } else R.hits.push(mk(t));
+      } else if (A.special === 'missing') R.hits.push(mk(t, { dmg: base + Math.floor(0.4 * (t.mhp - t.hp)) }));
+      else R.hits.push(mk(t));
+      if (A.special === 'chain') {
+        let last = t; const hit = [t];
+        for (let j = 0; j < 2; j++) {
+          const nx = G.units.filter(o => !hit.includes(o) && targetable(G, u, o) && dist(o, last) <= 2).sort((a, b) => dist(a, last) - dist(b, last))[0];
+          if (!nx) break; hit.push(nx); R.hits.push(mk(nx, { dmg: Math.max(1, Math.round(base * 0.7)) })); last = nx;
+        }
+      }
       R.target = t; break;
     }
     case 'ally': {
@@ -432,7 +491,7 @@ function abHits(G, u, k, tx, ty, from) {
       break;
     }
     case 'tile': {
-      if (!inB(tx, ty) || dist(P, T) > A.range || !losOk(u, P, T)) return null;
+      if (!inB(tx, ty) || isWall(tx, ty) || dist(P, T) > A.range || !losOk(u, P, T)) return null;
       R.area = { x: tx, y: ty, r: A.radius };
       for (const t of G.units) if (targetable(G, u, t) && dist(t, T) <= A.radius) R.hits.push(mk(t));
       break;
@@ -445,7 +504,11 @@ function abHits(G, u, k, tx, ty, from) {
         else if (A.special === 'omni') {
           const hs = ts.filter(t => t.kind === 'hero');
           if (ts.length) for (let i = 0; i < 4; i++) { const pool = hs.length ? hs : ts; R.hits.push(mk(pool[Math.floor(Math.random() * pool.length)])); }
-        } else ts.forEach(t => R.hits.push(mk(t)));
+        } else if (A.dmg || A.slow || A.stun) ts.forEach(t => R.hits.push(mk(t)));
+        if (A.special === 'wave' || A.special === 'roar') for (const h of heroes(G, u.team)) if (alive(h) && dist(h, P) <= A.radius) {
+          if (A.special === 'wave') R.heals.push({ u: h, amt: dmgVal(G, u, A.heal) });
+          else R.shields.push({ u: h, amt: 3 });
+        }
       }
       break;
     }
@@ -457,11 +520,17 @@ function abHits(G, u, k, tx, ty, from) {
     }
     case 'dash': {
       if (dist(P, T) > A.range || dist(P, T) === 0 || !freeAt(G, tx, ty, u)) return null;
-      R.dest = { x: tx, y: ty }; break;
+      R.dest = { x: tx, y: ty };
+      if (A.dmg) { R.area = { x: tx, y: ty, r: A.radius || 1 }; for (const t of G.units) if (targetable(G, u, t) && dist(t, T) <= (A.radius || 1)) R.hits.push(mk(t)); }
+      break;
     }
     case 'global': break;
   }
-  if (A.heal) {
+  if (A.knock) for (const h of R.hits) { const sx = Math.sign(h.u.x - P.x), sy = Math.sign(h.u.y - P.y); h.knock = { dx: sx, dy: sy, n: A.knock }; }
+  if (A.special === 'vortex') for (const h of R.hits) h.vortex = { x: tx, y: ty };
+  if (A.special === 'cleanse' && R.target) R.cleanse = R.target;
+  if (A.special === 'haste' && R.target) R.haste = R.target;
+  if (A.heal && A.special !== 'wave') {
     const amt = dmgVal(G, u, A.heal);
     if (A.type === 'ally') R.heals.push({ u: R.target, amt });
     else if (A.type === 'global') for (const h of heroes(G, u.team)) { if (alive(h)) R.heals.push({ u: h, amt }); }
@@ -518,6 +587,15 @@ function applyAbility(G, u, k, tx, ty) {
       if (h.burn) t.st.burn = { d: h.burn.d, t: h.burn.t, src: u.id };
       if (t.kind === 'hero' && (h.stun || h.root)) t.recall = false;
     }
+    if (h.knock && cc && t.kind !== 'neutral' && (h.knock.dx || h.knock.dy)) {
+      const ox = t.x, oy = t.y;
+      for (let j = 0; j < h.knock.n; j++) { const nx = t.x + h.knock.dx, ny = t.y + h.knock.dy; if (!freeAt(G, nx, ny, t)) break; t.x = nx; t.y = ny; }
+      if (t.x !== ox || t.y !== oy) fx(G, { k: 'move', x: ox, y: oy, x2: t.x, y2: t.y, team: t.team });
+    }
+    if (h.vortex && cc && t.kind !== 'neutral' && dist(t, h.vortex) > 0) {
+      const spot = freeAt(G, h.vortex.x, h.vortex.y, t) ? h.vortex : (dist(t, h.vortex) > 1 ? adjFree(G, h.vortex, t, t) : null);
+      if (spot) { fx(G, { k: 'move', x: t.x, y: t.y, x2: spot.x, y2: spot.y, team: t.team }); t.x = spot.x; t.y = spot.y; }
+    }
     if (h.pull && cc && t.kind !== 'neutral') {
       const spot = adjFree(G, u, t, t);
       if (spot && dist(spot, u) <= 1) { fx(G, { k: 'move', x: t.x, y: t.y, x2: spot.x, y2: spot.y, team: t.team }); t.x = spot.x; t.y = spot.y; }
@@ -528,6 +606,12 @@ function applyAbility(G, u, k, tx, ty) {
   let reset = false;
   if (HEROES[u.hero].reset && k !== 'r' && !A.quick && killed) reset = true;
   if (A.special === 'rot') { u.hp = Math.max(1, u.hp - 1); }
+  if (A.special === 'cleave') { const n = R.hits.filter(h => h.u.kind === 'hero').length; if (n) heal(G, u, 3 * n); }
+  if (R.cleanse && alive(R.cleanse)) R.cleanse.st = fresh();
+  if (R.haste && alive(R.haste)) {
+    const t = R.haste; t.buffs = t.buffs.filter(b => b.tag !== 'haste'); t.buffs.push({ k, tag: 'haste', s: { mov: 2 }, dur: 2 });
+    if (t.team === G.turnTeam && !t.done) t.mv += 2;
+  }
   for (const he of R.heals) heal(G, he.u, he.amt);
   for (const s of R.shields) { if (!alive(s.u)) continue; s.u.shield = Math.min(25, (s.u.shield || 0) + s.amt); s.u.shieldT = 2; fx(G, { k: 'shield', x: s.u.x, y: s.u.y, v: s.amt }); }
   if (A.buff) { u.buffs = u.buffs.filter(b => !(A.buff.tag && b.tag === A.buff.tag)); u.buffs.push({ k, tag: A.buff.tag || null, s: A.buff.s || null, dur: A.buff.dur }); }
@@ -537,7 +621,7 @@ function applyAbility(G, u, k, tx, ty) {
   let msg = `${HEROES[u.hero].n} used ${A.n}`;
   if (names.length) msg += ' on ' + names.join(', ');
   if (total) msg += ` for ${total}`;
-  if (reset) msg += '. The kill reset her action';
+  if (reset) msg += '. The kill reset the action';
   log(G, msg, u.team);
   return null;
 }
@@ -632,7 +716,7 @@ function useItem(G, u, i, tx, ty) {
 /* ---------- setup ---------- */
 function newLobby(mode) {
   return {
-    v: 2, phase: 'lobby', mode, cfg: { size: 1, map: 'rift', random: false },
+    v: 3, phase: 'lobby', mode, cfg: { size: 1, map: 'rift', pick: 'draft' },
     slots: [
       { team: 0, hero: 'blademaster', ctrl: 'human', peer: null, diff: 1 },
       { team: 1, hero: 'pyra', ctrl: 'ai', peer: null, diff: 1 }],
@@ -653,6 +737,52 @@ function setTeamSize(G, n) {
   }
   G.slots.sort((a, b) => a.team - b.team);
 }
+/* ---------- hero draft ----------
+   Snake order: Azure picks 1, then each team picks 2 in turn, and the last pick is single.
+   4v4: A BB AA BB A · 3v3: A BB AA B · 2v2: A BB A · 1v1: A B */
+function draftOrder(n) {
+  const out = [0], left = [n - 1, n]; let t = 1;
+  while (left[0] + left[1] > 0) {
+    for (let j = 0; j < 2 && left[t] > 0; j++) { out.push(t); left[t]--; }
+    t = 1 - t;
+  }
+  return out;
+}
+function startDraft(G) {
+  G.phase = 'draft';
+  G.draft = { order: draftOrder(G.cfg.size), i: 0 };
+  G.slots.forEach(s => { s.hero = null; });
+  G.log = []; log(G, 'Draft started. Azure has first pick.');
+}
+function draftSlot(G) {
+  if (!G.draft || G.draft.i >= G.draft.order.length) return -1;
+  const team = G.draft.order[G.draft.i];
+  return G.slots.findIndex(s => s.team === team && !s.hero);
+}
+function draftPick(G, slotIdx, hero) {
+  if (G.phase !== 'draft') return 'The draft is over';
+  if (slotIdx !== draftSlot(G)) return 'It is not this seat\'s pick';
+  if (!HEROES[hero]) return 'Unknown hero';
+  if (G.slots.some(s => s.hero === hero)) return `${HEROES[hero].n} is already taken`;
+  const s = G.slots[slotIdx]; s.hero = hero; G.draft.i++;
+  log(G, `${TEAMS[s.team].name} picked ${HEROES[hero].n} (${HEROES[hero].role})`, s.team);
+  if (draftSlot(G) < 0) startGame(G);
+  return null;
+}
+/* Bots draft for a balanced team: fill missing roles in this priority, random hero within the role. */
+const ROLE_PRIORITY = ['Tank', 'Mage', 'Marksman', 'Support', 'Fighter', 'Initiator', 'Assassin'];
+function botDraftHero(G, slotIdx) {
+  const team = G.slots[slotIdx].team;
+  const taken = G.slots.map(s => s.hero).filter(Boolean);
+  const have = G.slots.filter(s => s.team === team && s.hero).map(s => HEROES[s.hero].role);
+  const free = HERO_KEYS.filter(k => !taken.includes(k));
+  for (const role of ROLE_PRIORITY) {
+    if (have.includes(role)) continue;
+    const opts = free.filter(k => HEROES[k].role === role);
+    if (opts.length) return opts[Math.floor(Math.random() * opts.length)];
+  }
+  return free[Math.floor(Math.random() * free.length)];
+}
 function activeLanes(G) { return MAP.lanes.map((_, i) => i); }
 function laneStart(G, lane, team) {
   const p = MAP.lanes[lane];
@@ -665,7 +795,7 @@ function startGame(G) {
   setMap(G.cfg.map);
   G.kills = [0, 0]; G.tlost = [0, 0]; G.tbuff = [0, 0]; G.crown = [0, 0]; G.winner = null; G.turnTeam = 0; G.first = 0;
   const RU = MAP.rules;
-  if (G.cfg.random) {
+  if (G.cfg.pick === 'random') {
     const pool = [...HERO_KEYS].sort(() => Math.random() - 0.5);
     G.slots.forEach((s, i) => { s.hero = pool[i % pool.length]; });
   }

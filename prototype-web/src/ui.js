@@ -51,6 +51,13 @@ function hostApply(a, peer) {
   const isMe = peer === NET.me;
   let err = null;
   if (a.t === 'L') err = lobbyOp(a, peer, isMe);
+  else if (a.t === 'D') {
+    const i = draftSlot(G); const s = G.slots[i];
+    if (G.phase !== 'draft') err = 'The draft is over';
+    else if (a.slot !== i || !s) err = 'It is not your pick';
+    else if (s.ctrl !== 'human' || (NET.mode !== 'local' && s.peer !== peer)) err = 'It is not your pick';
+    else { err = draftPick(G, i, a.hero); if (!err && G.phase === 'play') { UI.sel = null; UI.mode = null; UI.inspect = null; } }
+  }
   else if (a.t === 'endteam') {
     if (G.phase !== 'play') return;
     const ids = heroes(G, G.turnTeam).filter(h => { const s = G.slots[h.slot]; return s && s.ctrl === 'human' && (NET.mode === 'local' || s.peer === peer); }).map(h => h.id);
@@ -71,7 +78,19 @@ function changed() {
   scheduleAI();
 }
 function scheduleAI() {
-  if (NET.mode === 'client' || !G || G.phase !== 'play' || aiTimer) return;
+  if (NET.mode === 'client' || !G || aiTimer) return;
+  if (G.phase === 'draft') {
+    const i = draftSlot(G);
+    if (i >= 0 && G.slots[i].ctrl !== 'human') aiTimer = setTimeout(() => {
+      aiTimer = null;
+      if (G.phase !== 'draft' || draftSlot(G) !== i) return;
+      draftPick(G, i, botDraftHero(G, i));
+      if (G.phase === 'play') { UI.sel = null; UI.mode = null; UI.inspect = null; for (const k in AIM) delete AIM[k]; }
+      changed();
+    }, UI.botFast ? 250 : 900);
+    return;
+  }
+  if (G.phase !== 'play') return;
   const h = heroes(G, G.turnTeam).find(h => !h.dead && !h.done && G.slots[h.slot] && G.slots[h.slot].ctrl !== 'human');
   if (!h) return;
   aiTimer = setTimeout(aiTick, UI.botFast ? 110 : 430);
@@ -120,14 +139,15 @@ function lobbyOp(a, peer, isHost) {
       return null;
     case 'diff': if (s) s.diff = Math.max(0, Math.min(2, a.diff | 0)); return null;
     case 'size': setTeamSize(G, a.size | 0); if (NET.mode === 'local') G.slots.forEach(o => { if (o.ctrl === 'open') o.ctrl = 'ai'; }); return null;
-    case 'map': if (!MAPS[a.map]) return 'Unknown map'; G.cfg.map = a.map; G.cfg.random = MAPS[a.map].rules.random; return null;
-    case 'random': G.cfg.random = !!a.random; return null;
+    case 'map': if (!MAPS[a.map]) return 'Unknown map'; G.cfg.map = a.map; G.cfg.pick = MAPS[a.map].rules.random ? 'random' : (G.cfg.pick === 'random' ? 'draft' : G.cfg.pick); return null;
+    case 'pick': if (!['draft', 'free', 'random'].includes(a.pick)) return 'Unknown pick mode'; G.cfg.pick = a.pick; return null;
     case 'start': {
       const hs = G.slots.map(o => o.hero);
-      if (new Set(hs).size !== hs.length) return 'Two seats picked the same hero. Change one';
+      if (G.cfg.pick === 'free' && new Set(hs).size !== hs.length) return 'Two seats picked the same hero. Change one';
       G.slots.forEach(o => { if (o.ctrl === 'open' || (o.ctrl === 'human' && NET.mode !== 'local' && !o.peer)) { o.ctrl = 'ai'; o.peer = null; } });
       for (const k in AIM) delete AIM[k];
-      startGame(G); UI.sel = null; UI.mode = null; UI.inspect = null;
+      UI.sel = null; UI.mode = null; UI.inspect = null; UI.draftSel = null;
+      if (G.cfg.pick === 'draft') startDraft(G); else startGame(G);
       return null;
     }
   }
@@ -136,6 +156,8 @@ function lobbyOp(a, peer, isHost) {
 function backToLobby() {
   const L = newLobby(G.mode);
   L.cfg = G.cfg; L.slots = G.slots.map(s => ({ team: s.team, hero: s.hero, ctrl: s.ctrl, peer: s.peer, diff: s.diff }));
+  const used = new Set(L.slots.map(s => s.hero).filter(Boolean));
+  for (const s of L.slots) if (!s.hero) { s.hero = HERO_KEYS.find(k => !used.has(k)); used.add(s.hero); }
   L.players = G.players || []; L.host = G.host; L.code = G.code;
   G = L; closeModal(); changed();
 }
@@ -227,7 +249,7 @@ function dropPeer(peer) {
   for (const s of G.slots) if (s.peer === peer) {
     touched = true;
     if (G.phase === 'lobby') { s.ctrl = 'open'; s.peer = null; }
-    else { s.ctrl = 'ai'; s.diff = 1; s.peer = null; log(G, `${p ? p.nick : 'A player'} left. A bot takes over ${HEROES[s.hero].n}`); }
+    else { s.ctrl = 'ai'; s.diff = 1; s.peer = null; log(G, `${p ? p.nick : 'A player'} left. A bot takes over ${s.hero ? HEROES[s.hero].n : 'their seat'}`); }
   }
   if (touched) changed();
 }
@@ -261,12 +283,13 @@ function render() {
   if (!G) { show('menu'); renderHud(); return; }
   if (G.cfg) { if (!G.cfg.map) G.cfg.map = 'rift'; const before = MAP.id; setMap(G.cfg.map); if (before !== MAP.id && !$('#scr-game').hidden) sizeBoard(); }
   if (G.phase === 'lobby') { show('lobby'); renderLobby(); closeModalIf('over'); }
+  else if (G.phase === 'draft') { show('lobby'); renderDraft(); closeModalIf('over'); }
   else { if ($('#scr-game').hidden) { show('game'); sizeBoard(); } fixSelection(); renderSide(); draw(); if (G.phase === 'over') openOver(); }
   renderHud();
 }
 function renderHud() {
   const h = $('#hud');
-  if (!G || G.phase === 'lobby') { h.innerHTML = NET.mode !== 'local' && NET.code ? `<span class="chip warn">Room ${esc(NET.code)}</span>` : ''; return; }
+  if (!G || G.phase === 'lobby' || G.phase === 'draft') { h.innerHTML = NET.mode !== 'local' && NET.code ? `<span class="chip warn">Room ${esc(NET.code)}</span>` : ''; return; }
   const tt = G.turnTeam;
   h.innerHTML = `<span class="chip">Round ${G.round}</span>` +
     (tt >= 0 ? `<span class="chip t${tt}">${TEAMS[tt].name} turn</span>` : '') +
@@ -317,10 +340,11 @@ function renderLobby() {
   const team = t => {
     const rows = G.slots.map((s, i) => [s, i]).filter(([s]) => s.team === t).map(([s, i]) => {
       const d = HEROES[s.hero]; const canHero = host || (s.ctrl === 'human' && s.peer === NET.me);
-      return `<div class="slot"><div class="ic">${d.i}</div>
+      const free = G.cfg.pick === 'free';
+      return `<div class="slot"><div class="ic">${free ? d.i : (G.cfg.pick === 'draft' ? `<span class="pickno">${pickNumbers(t)[G.slots.filter(o => o.team === t).indexOf(s)]}</span>` : '🎲')}</div>
         <div class="row">${seatControl(s, i)}</div>
-        <div class="row"><select data-op="hero" data-slot="${i}" ${canHero && !G.cfg.random ? '' : 'disabled'} aria-label="Hero">${heroOpts(s.hero, t, s)}</select></div>
-        <div class="about">${esc(d.about)}</div></div>`;
+        ${free ? `<div class="row"><select data-op="hero" data-slot="${i}" ${canHero ? '' : 'disabled'} aria-label="Hero">${heroOpts(s.hero, t, s)}</select></div>
+        <div class="about">${esc(d.about)}</div>` : `<div class="about">${G.cfg.pick === 'draft' ? 'Hero chosen in the draft, at this pick number.' : 'Hero dealt at random when the match starts.'}</div>`}</div>`;
     }).join('');
     return `<div class="team t${t}"><h2 class="t${t}c">${TEAMS[t].name}</h2>${rows}</div>`;
   };
@@ -332,16 +356,17 @@ function renderLobby() {
     </div>
     <div class="settings">
       <div class="field"><span class="label">Team size</span>${seg('size', G.cfg.size, [[1, '1v1'], [2, '2v2'], [3, '3v3'], [4, '4v4']])}</div>
-      <div class="field"><span class="label">Heroes</span>${seg('random', G.cfg.random ? 1 : 0, [[0, 'Pick'], [1, 'All random']])}</div>
+      <div class="field"><span class="label">Hero picks</span>${seg('pick', G.cfg.pick, [['draft', 'Draft'], ['free', 'Free pick'], ['random', 'All random']])}</div>
       ${host ? `<button class="btn primary" data-op="start" style="margin-left:auto;padding:9px 22px;font-size:16px">Start match</button>` : `<span class="note" style="margin-left:auto">Waiting for the host to start…</span>`}
     </div>
     <div class="maps">${MAP_KEYS.map(id => { const M = MAPS[id]; return `<button class="mapcard" data-op="map" data-v="${id}" aria-pressed="${G.cfg.map === id}" ${host ? '' : 'disabled'}><canvas data-preview="${id}" aria-hidden="true"></canvas><b>${M.n}</b><span class="note">${M.size} · ${M.best}</span><span class="mdesc">${esc(M.desc)}</span></button>`; }).join('')}</div>
     ${online ? `<div class="players"><span class="label" style="align-self:center">In the room</span>${(G.players || []).map(p => `<span class="chip">${esc(p.nick)}${p.peer === NET.me ? ' (you)' : ''}${p.peer === G.host ? ' · host' : ''}</span>`).join('')}</div>` : ''}
     <div class="teams">${team(0)}${team(1)}</div>
-    <p class="note">${online ? 'Empty seats become bots when the match starts. ' : 'Every “Player” seat is played on this screen, taking turns. '}${G.cfg.random ? 'All random is on: heroes are dealt out when the match starts. ' : ''}Tip for new players: Blademaster, Bulwark and Pyra are the easiest heroes.</p>`;
+    <p class="note">${online ? 'Empty seats become bots when the match starts. ' : 'Every “Player” seat is played on this screen, taking turns. '}${G.cfg.pick === 'draft' ? `Draft order: ${draftOrder(G.cfg.size).map(t => TEAMS[t].name[0]).join(' ')} (Azure first; A = Azure, E = Ember). ` : G.cfg.pick === 'random' ? 'All random is on: heroes are dealt out when the match starts. ' : ''}Tip for new players: heroes marked “easy” in the draft are the simplest to learn.</p>`;
   for (const c of document.querySelectorAll('canvas[data-preview]')) drawMapPreview(c, MAPS[c.dataset.preview], 300);
 }
 function onLobbyEvent(e) {
+  if (G && G.phase === 'draft') { onDraftEvent(e); return; }
   const el = e.target.closest('[data-op]'); if (!el || !G || G.phase !== 'lobby') return;
   const op = el.dataset.op; const slot = el.dataset.slot != null ? +el.dataset.slot : null;
   if (e.type === 'change' && el.tagName === 'SELECT') {
@@ -351,10 +376,70 @@ function onLobbyEvent(e) {
   } else if (e.type === 'click' && el.tagName === 'BUTTON') {
     if (op === 'size') send({ t: 'L', op, size: +el.dataset.v });
     else if (op === 'map') send({ t: 'L', op, map: el.dataset.v });
-    else if (op === 'random') send({ t: 'L', op, random: el.dataset.v === '1' });
+    else if (op === 'pick') send({ t: 'L', op, pick: el.dataset.v });
     else if (op === 'claim' || op === 'release') send({ t: 'L', op, slot });
     else if (op === 'start') send({ t: 'L', op });
   }
+}
+
+/* ---------- draft ---------- */
+const TAGLINE = { bulwark: 'Shield and stuns', butcher: 'Hook and devour', blademaster: 'Spinning duelist', ravager: 'Axe brawler, self-heal',
+  shade: 'Burst and execute', viper: 'Poison over time', pyra: 'Burst mage', stormcaller: 'Chain lightning, control',
+  frostbow: 'Kiting, slows', deadeye: 'Long-range sniper', lumen: 'Heals and roots', tidesinger: 'Bubbles and cleanses',
+  quake: 'Line stun, big slam', bramblehorn: 'Toss and pull together' };
+const EASY = new Set(['blademaster', 'bulwark', 'pyra', 'lumen', 'frostbow', 'ravager']);
+function pickNumbers(team) {
+  const ord = draftOrder(G.cfg.size); const out = [];
+  ord.forEach((t, i) => { if (t === team) out.push(i + 1); });
+  return out;
+}
+function myDraftTurn() {
+  const i = draftSlot(G); const s = G.slots[i];
+  return !!s && s.ctrl === 'human' && (NET.mode === 'local' || s.peer === NET.me);
+}
+function heroDetail(k) {
+  const d = HEROES[k];
+  const traits = [d.freeAttack ? 'First basic attack each turn is free.' : '', d.los ? 'Needs line of sight.' : '', d.reset ? 'Skill kills reset her action.' : ''].filter(Boolean).join(' ');
+  return `<div class="dhead"><span class="dic">${d.i}</span><div><h3>${d.n}</h3><div class="lvl">${d.role}${EASY.has(k) ? ' · easy' : ''} · HP ${d.hp} · ATK ${d.atk} · RNG ${d.rng} · MOV ${d.mov}</div></div></div>
+    <p class="note" style="margin:0">${esc(d.about)}${traits ? ' <b>' + esc(traits) + '</b>' : ''}</p>
+    <div class="dab">${AB_KEYS.map(a => `<div><b>${a.toUpperCase()} · ${esc(d.ab[a].n)}</b>${d.ab[a].quick ? ' <span class="chip" style="color:var(--good);border-color:var(--good)">free</span>' : ''}<br><span class="note">${esc(d.ab[a].d)}</span></div>`).join('')}</div>`;
+}
+function renderDraft() {
+  const i = draftSlot(G); const cur = G.slots[i]; const mine = myDraftTurn();
+  const taken = new Map(G.slots.filter(s => s.hero).map(s => [s.hero, s.team]));
+  if (UI.draftSel && taken.has(UI.draftSel)) UI.draftSel = null;
+  const ord = G.draft.order;
+  const strip = ord.map((t, j) => `<span class="pick t${t} ${j === G.draft.i ? 'now' : j < G.draft.i ? 'done' : ''}" title="Pick ${j + 1}: ${TEAMS[t].name}">${j + 1}</span>`).join('');
+  const teamCol = t => `<div class="team t${t}"><h2 class="t${t}c">${TEAMS[t].name}</h2>${G.slots.map((s, j) => [s, j]).filter(([s]) => s.team === t).map(([s, j]) => {
+    const d = s.hero && HEROES[s.hero];
+    return `<div class="dslot ${j === i ? 'now' : ''}"><span class="dic">${d ? d.i : (j === i ? '…' : '?')}</span><div><b>${d ? d.n : (j === i ? 'Picking…' : 'Waiting')}</b><br><span class="note">${d ? d.role + ' · ' : ''}${esc(seatName(s))}</span></div></div>`;
+  }).join('')}</div>`;
+  const grid = ROLES.map(r => `<div class="drole"><div class="label">${r}</div><div class="dcards">${HERO_KEYS.filter(k => HEROES[k].role === r).map(k => {
+    const d = HEROES[k]; const tk = taken.get(k);
+    return `<button class="dcard ${UI.draftSel === k ? 'sel' : ''} ${tk != null ? 'taken t' + tk : ''}" data-hero="${k}" ${tk != null ? 'disabled' : ''}><span class="dic">${d.i}</span><span><b>${d.n}</b>${EASY.has(k) ? '<em class="easy">easy</em>' : ''}<br><span class="note">${tk != null ? 'Taken by ' + TEAMS[tk].name : esc(TAGLINE[k] || d.role)}</span></span></button>`;
+  }).join('')}</div></div>`).join('');
+  const sel = UI.draftSel;
+  $('#scr-lobby').innerHTML = `
+    <div class="lobbyhead"><div><div class="label">Hero draft · ${G.cfg.size}v${G.cfg.size} · ${MAPS[G.cfg.map].n}</div>
+      <h2 style="font-size:30px">${cur ? `<span class="t${cur.team}c">${TEAMS[cur.team].name}</span> pick ${G.draft.i + 1} of ${ord.length}` : 'Starting…'}</h2></div>
+      <div class="pickstrip" aria-label="Pick order">${strip}</div></div>
+    <div class="draftgrid">
+      ${teamCol(0)}
+      <div class="dcenter">
+        <div class="pane dinfo">${sel ? heroDetail(sel) : `<p class="note" style="margin:0">${mine ? `It's your pick for ${esc(seatName(cur))}. Choose a hero below to see their skills, then lock in.` : cur && cur.ctrl !== 'human' ? 'A bot is picking…' : `Waiting for ${esc(cur ? seatName(cur) : '')} to pick. Click a hero to read about them.`}</p>`}
+          ${mine ? `<button class="btn primary" data-lock ${sel ? '' : 'disabled'}>${sel ? 'Lock in ' + HEROES[sel].n : 'Choose a hero'}</button>` : ''}</div>
+        ${grid}
+      </div>
+      ${teamCol(1)}
+    </div>
+    <div class="row2"><span class="note">Each hero can be picked once. Bots pick to fill the roles their team is missing.</span>${isHostish() ? '<button class="btn small" data-cancel style="flex:0 0 auto;margin-left:auto">Back to setup</button>' : ''}</div>`;
+}
+function onDraftEvent(e) {
+  if (e.type !== 'click') return;
+  const b = e.target.closest('button'); if (!b || b.disabled) return;
+  if (b.dataset.hero) { UI.draftSel = b.dataset.hero; renderDraft(); return; }
+  if (b.hasAttribute('data-lock') && UI.draftSel) { send({ t: 'D', slot: draftSlot(G), hero: UI.draftSel }); UI.draftSel = null; return; }
+  if (b.hasAttribute('data-cancel')) { clearTimeout(aiTimer); aiTimer = null; backToLobby(); }
 }
 
 /* ---------- board drawing ---------- */
@@ -813,6 +898,7 @@ function openRules() {
   <div class="rules">
     <div><h3>Goal</h3><p>Destroy the enemy Core in the far corner. Each Core is protected until its team loses at least one tower. On maps with two towers per lane, the inner tower is protected until the outer one falls. From round ${overtimeAt()} on this map, both Cores crumble 4 HP per round, so every match has an end.</p></div>
     <div><h3>Maps</h3><ul><li><b>The Rift</b>: three lanes, river, Drake and Golem. Best for bigger teams.</li><li><b>Twin Hollow</b>: two lanes and a tight jungle. Altars give +1 ATK/PWR while held; end your turn on one to capture it. The Spider Queen gives +2 ATK/PWR for 8 rounds.</li><li><b>Frost Bridge</b>: one lane, no recall, level 3 start, health relics, random heroes by default. Pure teamfighting.</li></ul></div>
+    <div><h3>Draft</h3><ul><li>14 heroes, 2 per class: Tank, Fighter, Assassin, Mage, Marksman, Support, Initiator.</li><li>Snake order: Azure picks 1, then each team picks 2 in turn, last pick single (4v4: A EE AA EE A).</li><li>Each hero can be picked once per match.</li></ul></div>
     <div><h3>A round</h3><ul><li>One team acts, then the other (who goes first alternates).</li><li>Each hero gets <b>movement</b> up to its MOV and <b>one action</b>: a basic attack or an ability. Split movement around the action as you like.</li><li>Then minions march, towers shoot and jungle monsters strike back.</li></ul></div>
     <div><h3>Abilities</h3><ul><li>Q, W, E unlocked from the start. R (the ultimate) unlocks at level 3.</li><li>Cooldowns count down at the end of your turns.</li><li>Abilities marked <b style="color:var(--good)">free</b> don't use your action.</li><li>Lines go in 8 directions. Areas are 3×3 squares. Distances count diagonals as 1.</li></ul></div>
     <div><h3>Gold and levels</h3><ul><li>Last-hit minions (20–28 gold), wolves (45), heroes (100+). Everyone gets 15 gold a round.</li><li>XP comes from minions dying near you, kills and objectives. Max level 6.</li><li>Shop in your base or while dead. Standing in your own base heals you to full right away (recall, walk in or respawn).</li></ul></div>

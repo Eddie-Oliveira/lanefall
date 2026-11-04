@@ -26,6 +26,33 @@ Rules
 
 ---
 
+### [2026-11-04] v0.3.2 · Prototype: 14 heroes (2 per class) and snake draft
+areas: CODE | QA
+agent: lead
+- Six new heroes in the web prototype, one more per class: Ravager (Fighter), Viper (Assassin), Stormcaller (Mage, line of sight), Deadeye (Marksman, free attack, line of sight), Tidesinger (Support), Bramblehorn (Initiator).
+- New mechanics: knockback, pull to centre, chain targeting, cleanse, haste, missing-HP damage, area shields; area abilities can no longer target wall tiles.
+- Draft before the match (Eddie's pick order): Azure 1, then 2 each alternating, last pick single (4v4 A EE AA EE A). Pick modes Draft (default), Free pick, All random (Frost Bridge default). Bots fill missing roles.
+- Draft screen: pick-order strip, both teams, heroes by class with taken ones greyed out, skill details before lock-in, "easy" tags.
+- Files: prototype-web/lanefall-v0.3.html, prototype-web/src/{engine,ai,ui}.js, prototype-web/src/shell.html, prototype-web/tests/test_v032_draft.js
+- Tests: test_v032_draft.js 71/71 (draft order 1v1–4v4, uniqueness, bot role spread, each new mechanic, 4v4 bot games on all maps); test_v031.js 13/13; browser draft flow at desktop and phone width, 0 errors
+- Needs: none (GDD r3 covers the v1 versions)
+
+### [2026-11-04] v1.0-dev · GDD r3: 14 heroes (2 per role) and the hero draft
+areas: DESIGN | CODE | BOTS | UX | ASSETS | NET
+agent: design
+- Eddie's requests: six heroes translated from the prototype into v1 rules (Ravager, Viper, Stormcaller, Deadeye, Tidesinger, Bramblehorn) with stats, cooldowns and MOBA one-liners; roles table with role traits (Marksman: Twin Shot for Frostbow + Deadeye; Mage: Line of Sight for Pyra + Stormcaller, plus Deadeye) and difficulty stars.
+- New effects each defined once, condition list still 5: dash/jump/knockback/pull/pull-to-centre (6.8, structures, neutrals and waves can't be moved); cleanse, haste (buff), missing-HP damage, chain, Viper's Poison trait (POW not added) (6.9); Free abilities; condition durations "(2)".
+- Hero draft (10.2): snake order A BB AA BB A (3v3 A BB AA B, 2v2 A BB A, 1v1 A B), unique heroes, next seat in seat order, bot role-fill (Tank, Mage, Marksman, Support, Fighter, Initiator, Assassin), modes Draft / Free pick / All random (Frost Bridge default), 30 s pick timer with hover-or-bot auto-pick. Onboarding draft help (14), quick-reference DRAFT line (15).
+- Balance (`ttk.py`): new heroes close to their role partner (avg TTK L1/L5: Ravager 2.8/2.8 vs Blademaster 2.5/2.6, Viper 3.0/2.2 vs Shade 2.6/2.2, Stormcaller 2.9/2.4 vs Pyra 2.6/2.4, Deadeye 3.4/1.8 vs Frostbow 4.3/1.8); Bramblehorn weakest damage (5.1/5.7). Watch list 16.4 #9–15 (Deadeye, Earthshaker combos, Viper L3, Ravager sustain). `draft.py`: 0% role denial with 14 heroes and no bans; 1 ban/team → 84% at 4v4, so no bans until 3 per role (6%).
+- Open questions Q14 (who takes each pick), Q15 (bans), Q16 (first pick), Q17 (Poison vs Burn condition); 18.2 lists r3 changes.
+- Files: docs/design/GDD.md, docs/design/sim/ttk.py, docs/design/sim/draft.py
+- Tests: `python3 docs/design/sim/ttk.py` (original 8 rows unchanged), `python3 docs/design/sim/draft.py` (+ `--pool3`); pacing sim not re-run (still 8 heroes, see 16.1)
+- Needs: ASSETS: 6 hero miniatures in the existing style, team-color base ring, idle + cast pose: Ravager (axe brawler), Viper (serpent assassin, poison-green), Stormcaller (storm mage, lightning staff), Deadeye (long-rifle sniper, scope), Tidesinger (water priestess, bubble/wave), Bramblehorn (armored rhino-like charger); plus Poison token (n + 3 pips), Haste icon, knockback/pull arrows, chain-lightning and radius-2 area VFX.
+- Needs: UX: draft screen — pick-order strip (A BB AA BB A with seat avatars, current pick highlighted), role filter + "Recommended" (★ Easy) filter, hero card (stats, 4 abilities, role trait, stars, MOBA one-liner), hover vs lock-in, 30 s timer ring, "Your team needs" hint, 10 s team view; tutorial hero choice from the 5 Easy heroes (GDD 14, 19).
+- Needs: CODE: draft phase before round 1 in core (order, seats, uniqueness, 3 pick modes, timeout auto-pick), the six heroes, Free abilities, 6.8 forced movement, 6.9 cleanse/haste/missing-HP/chain/Poison, condition durations, role traits, previews; unit tests listed in GDD 19.
+- Needs: BOTS: draft by role priority (`BotDraftPick`), play the six heroes from previews (Gust/Horn Toss toward own tower, Earthshaker on ≥ 2 heroes, Riptide on stunned ally, Poison-aware recall); 1v1 draft suggestion in GDD 19.
+- Needs: NET: draft sync (host-authoritative order and uniqueness, team-only hover), 30 s pick timer, disconnect/timeout auto-pick, picks in the replay log.
+
 ### [2026-11-02] v0.3.1 · Prototype: Pyra line of sight, Shade execute 20% and action reset
 areas: CODE | QA
 agent: lead

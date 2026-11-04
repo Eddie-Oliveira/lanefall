@@ -61,7 +61,13 @@ function aiCandidates(G, u, k, P) {
     return out;
   }
   if (A.type === 'ally') { for (const h of heroes(G, u.team)) if (alive(h) && dist(h, P) <= A.range) out.push({ x: h.x, y: h.y }); return out; }
-  if (A.type === 'dash') return [];
+  if (A.type === 'dash') {
+    if (!A.dmg) return [];
+    const out2 = [];
+    for (const t of G.units) if (targetable(G, u, t) && t.kind === 'hero' && dist(t, P) <= A.range + 1)
+      for (const [dx, dy] of D8) { const x = t.x + dx, y = t.y + dy; if (dist(P, { x, y }) <= A.range && dist(P, { x, y }) > 0 && freeAt(G, x, y, u)) out2.push({ x, y }); }
+    return out2;
+  }
   for (const t of G.units) if (targetable(G, u, t) && dist(t, P) <= (A.range || 0) + (A.radius || 0)) {
     if (A.type === 'tile') { if (dist(t, P) <= A.range) out.push({ x: t.x, y: t.y }); }
     else out.push({ x: t.x, y: t.y });
