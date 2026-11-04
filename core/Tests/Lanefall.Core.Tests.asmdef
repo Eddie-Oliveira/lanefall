@@ -1,0 +1,14 @@
+{
+    "name": "Lanefall.Core.Tests.DotnetOnly",
+    "rootNamespace": "Lanefall.Core.Tests",
+    "references": [],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": true,
+    "precompiledReferences": [],
+    "autoReferenced": false,
+    "defineConstraints": [ "LANEFALL_DOTNET_TESTS_ONLY" ],
+    "versionDefines": [],
+    "noEngineReferences": true
+}

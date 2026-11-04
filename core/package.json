@@ -1,0 +1,8 @@
+{
+  "name": "com.lanefall.core",
+  "version": "0.1.0",
+  "displayName": "Lanefall Core",
+  "description": "Lanefall rules engine (GDD v1.0) in plain C#: deterministic, no UnityEngine references. Tests run with dotnet test in core/Tests.",
+  "unity": "6000.3",
+  "author": { "name": "Lanefall" }
+}
