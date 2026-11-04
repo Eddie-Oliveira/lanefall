@@ -1,0 +1,8 @@
+<Project>
+  <!-- Build output goes to core/.build~/ : Unity ignores folders ending in '~', so generated .cs files in obj/
+       never leak into the Unity package compile. -->
+  <PropertyGroup>
+    <BaseIntermediateOutputPath>$(MSBuildThisFileDirectory).build~/obj/$(MSBuildProjectName)/</BaseIntermediateOutputPath>
+    <BaseOutputPath>$(MSBuildThisFileDirectory).build~/bin/$(MSBuildProjectName)/</BaseOutputPath>
+  </PropertyGroup>
+</Project>
