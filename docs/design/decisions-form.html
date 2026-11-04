@@ -1,0 +1,279 @@
+<title>Lanefall Design Decisions</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Alegreya+SC:wght@500;700;800&family=Alegreya+Sans:ital,wght@0,400;0,500;0,700;1,400&display=swap">
+<style>
+/* Layout: a designer's decision ledger on the Lanefall war table. Sticky progress bar, questions grouped by system, one card per decision. Single dark look, same identity as the game. */
+:root {
+  --ink: #0d1719;
+  --panel: #142124;
+  --panel2: #1a2b2f;
+  --line: #2b3f43;
+  --text: #ebe3cc;
+  --muted: #95a59d;
+  --brass: #d6a748;
+  --brass-hi: #f1d083;
+  --good: #6fd38e;
+  --font-d: 'Alegreya SC', 'Palatino Linotype', Georgia, serif;
+  --font-b: 'Alegreya Sans', 'Segoe UI', system-ui, sans-serif;
+  color-scheme: dark;
+}
+body { margin: 0; background: var(--ink); color: var(--text); font-family: var(--font-b); font-size: 16px; line-height: 1.45; }
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--panel); }
+button, input, textarea { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--brass-hi); outline-offset: 2px; }
+.wrap { max-width: 860px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+header.bar { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--panel); border-bottom: 1px solid var(--line); }
+header.bar .wrap { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; padding-block: 10px; }
+.brand { font-family: var(--font-d); font-weight: 800; font-size: 20px; letter-spacing: .05em; color: var(--brass-hi); }
+.prog { flex: 1; min-width: 140px; display: grid; gap: 4px; }
+.prog .track { height: 6px; background: #0a1112; border-radius: 99px; overflow: hidden; }
+.prog .track i { display: block; height: 100%; background: var(--brass); width: 0; transition: width .25s; }
+.prog span { font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; }
+#status { font-size: 13px; color: var(--muted); white-space: nowrap; }
+#status.ok { color: var(--good); }
+.btn { background: var(--panel2); border: 1px solid var(--line); border-radius: 6px; padding: 7px 13px; cursor: pointer; }
+.btn:hover { border-color: var(--brass); }
+.btn.primary { background: var(--brass); border-color: var(--brass); color: #1b1408; font-weight: 700; }
+.btn.primary:hover { background: var(--brass-hi); }
+main.wrap { padding-block: 26px 60px; display: grid; gap: 30px; }
+.intro h1 { font-family: var(--font-d); font-size: clamp(32px, 6vw, 48px); line-height: 1; margin: 0 0 10px; color: var(--brass-hi); text-wrap: balance; }
+.intro p { margin: 0 0 8px; color: var(--muted); max-width: 64ch; }
+.intro .actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 14px; }
+.group { display: grid; gap: 14px; }
+.group > h2 { font-family: var(--font-d); font-size: 24px; margin: 0; letter-spacing: .02em; border-bottom: 1px solid var(--line); padding-bottom: 6px; }
+.q { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 16px; display: grid; gap: 10px; }
+.q.done { border-color: color-mix(in srgb, var(--brass) 55%, var(--line)); }
+.qhead { display: flex; gap: 10px; align-items: baseline; flex-wrap: wrap; }
+.qid { font-family: var(--font-d); color: var(--brass); font-size: 15px; font-variant-numeric: tabular-nums; }
+.qhead h3 { margin: 0; font-size: 19px; font-weight: 700; flex: 1; min-width: 0; text-wrap: balance; }
+.ctx { margin: 0; color: var(--muted); font-size: 14.5px; }
+.opts { display: grid; gap: 7px; }
+.opt { display: grid; grid-template-columns: 20px minmax(0, 1fr); gap: 10px; align-items: start; padding: 10px 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel2); cursor: pointer; }
+.opt:hover { border-color: var(--brass); }
+.opt input { margin: 3px 0 0; accent-color: var(--brass); width: 16px; height: 16px; }
+.opt:has(input:checked) { border-color: var(--brass); box-shadow: 0 0 0 1px var(--brass) inset; }
+.opt b { font-weight: 700; }
+.opt .sub { display: block; font-size: 14px; color: var(--muted); }
+.rec { display: inline-block; font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--good); border: 1px solid var(--good); border-radius: 99px; padding: 0 7px; margin-left: 6px; vertical-align: 2px; }
+.why { font-size: 14px; color: var(--muted); border-left: 2px solid var(--line); padding-left: 10px; margin: 0; }
+.why b { color: var(--text); font-weight: 500; }
+textarea { width: 100%; box-sizing: border-box; background: var(--ink); border: 1px solid var(--line); border-radius: 6px; padding: 8px 10px; min-height: 40px; resize: vertical; font-size: 14.5px; }
+textarea::placeholder { color: var(--muted); }
+.final { background: var(--panel); border: 1px solid var(--brass); border-radius: 10px; padding: 18px; display: grid; gap: 10px; }
+.final h2 { font-family: var(--font-d); margin: 0; color: var(--brass-hi); }
+.final p { margin: 0; color: var(--muted); }
+.final .actions { display: flex; gap: 10px; flex-wrap: wrap; }
+#toast { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(18px + env(safe-area-inset-bottom, 0px)); background: var(--panel2); border: 1px solid var(--brass); border-radius: 8px; padding: 9px 14px; max-width: calc(100% - 32px); z-index: 20; }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+
+<header class="bar"><div class="wrap">
+  <div class="brand">Lanefall</div>
+  <div class="prog"><div class="track"><i id="progbar"></i></div><span id="progtxt">0 of 17 decided</span></div>
+  <span id="status">Not saved yet</span>
+</div></header>
+
+<main class="wrap">
+  <section class="intro">
+    <h1>Design decisions for GDD v1</h1>
+    <p>The design agent left 17 questions for you in the GDD (section 17). Pick one option per question. The design agent's pick is marked <span class="rec">recommended</span>. Add a note wherever you want something different or more specific.</p>
+    <p>Your answers save automatically. When you're done, press <b>Send to Claude</b> or tell Claude in the chat that the form is done.</p>
+    <div class="actions"><button class="btn" id="acceptAll" type="button">Pre-fill the empty ones with the recommendations</button></div>
+  </section>
+  <div id="groups"></div>
+  <section class="final">
+    <h2>Anything else?</h2>
+    <label for="general" class="ctx">General notes for the design agent (playtest impressions, ideas, things missing from the list).</label>
+    <textarea id="general" rows="4" placeholder="Optional"></textarea>
+    <p id="finalTxt">Answered 0 of 17.</p>
+    <div class="actions">
+      <button class="btn primary" id="sendBtn" type="button" hidden>Send to Claude</button>
+      <button class="btn" id="copyBtn" type="button">Copy answers as text</button>
+    </div>
+  </section>
+</main>
+<div id="toast" hidden></div>
+
+<script>
+"use strict";
+const QS = [
+ { g: 'Turns and power', id: 'Q1', t: 'Power resource', ctx: 'What makes heroes stronger and pays for abilities.',
+   o: [['a', 'Levels by round, cooldowns, gold for items', 'Current draft. Familiar to MOBA players.'],
+       ['b', 'Rum & Bones coin', 'Gold also pays to empower abilities (spend 2 for +2 damage).'],
+       ['c', 'Skytear mana', 'A mana pool grows by 1 per round and pays ability costs; no cooldowns.']],
+   rec: 'a', why: 'One currency every veteran knows; (b) and (c) add a second spending decision every turn.' },
+ { g: 'Turns and power', id: 'Q2', t: 'Who acts at 3v3 and 4v4?', ctx: 'How activations alternate when each team has 3 or 4 heroes.',
+   o: [['a', 'Single heroes alternate', 'One hero per team at a time. About 72–109 min at 4v4.'],
+       ['b', 'Duo turns', 'Two allies act at the same time, then the other team. About 42–58 min at 4v4.'],
+       ['c', 'Whole team at once', 'About 33–43 min, but you watch the whole enemy team between turns again (the v0.3 wait).']],
+   rec: 'b', why: 'Keeps the back-and-forth while landing near the 75-minute target for 8 players.' },
+ { g: 'Turns and power', id: 'Q3', t: 'Stun strength', ctx: 'What a stunned hero loses on their next turn.',
+   o: [['a', 'Only 1 action next turn', 'Current draft.'], ['b', 'Skip the whole next turn', ''], ['c', 'No Move or Attack; abilities still allowed', '']],
+   rec: 'a', why: 'Kills take about 2 activations, so skipping a whole turn is a guaranteed death.' },
+ { g: 'Turns and power', id: 'Q6', t: 'Respawn', ctx: 'How long a knocked-out hero is gone.',
+   o: [['a', 'Always skip 1 activation', 'Current draft.'], ['b', 'Skip 2 from round 8', 'Late deaths cost more.'], ['c', 'Skip 1 and lose 2 gold', '']],
+   rec: 'a', why: 'Simplest to learn; revisit if late-game deaths feel cheap.' },
+ { g: 'Lanes and map', id: 'Q4', t: 'How lanes work', ctx: 'How minion waves are represented on the board.',
+   o: [['a', 'Front marker + Power, with minion miniatures and last hits', 'Current draft. One number per lane, last hits stay.'],
+       ['b', 'Individual minions that move (like v0.3)', ''], ['c', 'Pure Skytear token: no minion miniatures, no last hits', '']],
+   rec: 'a', why: 'Moving minions was a main source of confusion; (c) loses last hitting.' },
+ { g: 'Lanes and map', id: 'Q10', t: 'Tower dive damage', ctx: 'Damage a tower deals when you hurt an enemy hero under it.',
+   o: [['a', '3, flat', 'Current draft.'], ['b', '3, +1 at levels 3 and 5', 'Late dives cost more.']],
+   rec: 'a', why: 'Keep flat until playtests show late dives are free.' },
+ { g: 'Lanes and map', id: 'Q8', t: 'Denies', ctx: 'Attacking your own minions so the enemy can\'t last-hit them.',
+   o: [['a', 'No denies', 'Current draft.'], ['b', 'Denies allowed', 'Attack your own wave: kill 1 of your minions, no gold, the enemy can\'t last-hit it.']],
+   rec: 'a', why: 'A veteran nicety that adds a rule; leave it out of v1.0.' },
+ { g: 'Lanes and map', id: 'Q9', t: 'Recall on Frost Bridge', ctx: 'The one-lane brawl map.',
+   o: [['a', 'No recall, health relics instead', 'Current draft. Walking home still heals you fully.'], ['b', 'Recall like the other maps', '']],
+   rec: 'a', why: 'True to the all-mid brawl genre; your "base heals fully" rule still holds everywhere.' },
+ { g: 'Match', id: 'Q5', t: 'How a match ends', ctx: 'The current draft replaces overtime with victory points (VP) from kills, towers and objectives.',
+   o: [['a', 'VP target + round limit', 'Current draft. 12 rounds, 8 on Frost Bridge.'], ['b', 'VP target only', ''], ['c', 'Round limit only', '']],
+   rec: 'a', why: 'The VP target ends stomps early; the round limit guarantees session length online.' },
+ { g: 'Match', id: 'Q7', t: '2-player mode', ctx: 'What you and your girlfriend play by default.',
+   o: [['a', '1v1, one hero each', 'Quick duel, about 21–30 min.'],
+       ['b', '"Commander": 2v2, each player runs 2 heroes', 'Skytear style, about 35–52 min, shows the full lane game.'],
+       ['c', '1 hero each plus a bot ally each', ''],
+       ['ab', 'Offer both (a) and (b)', 'Pick in the lobby.']],
+   rec: 'ab', why: '(b) hits the 30–45 min target; (a) stays as the quick duel.' },
+ { g: 'Heroes', id: 'Q11', t: 'Who needs line of sight', ctx: 'Pyra needs it either way.',
+   o: [['a', 'Only line-of-sight heroes', 'Pyra, Stormcaller, Deadeye (like the prototype).'],
+       ['b', 'Every enemy-targeted ranged attack and ability', 'Heals, shields and global effects exempt; Shadow Step still ignores walls.'],
+       ['c', 'Everything that targets at range, allies included', '']],
+   rec: 'b', why: 'One board rule is easier to learn than a per-hero exception. Frostbow, Lumen and Tidesinger lose some shots.' },
+ { g: 'Heroes', id: 'Q12', t: 'Shade\'s reset trigger', ctx: 'When a Q, W or E kill gives Shade another action.',
+   o: [['a', 'Hero kill, neutral steal, or wiping a wave; once per activation', 'Current draft.'],
+       ['b', 'Any kill, including a single last hit; once per activation', 'Your original wording; like the prototype. Shade gets 4 actions almost every lane turn.'],
+       ['c', 'Hero kills only, no cap', 'Cooldowns still limit it to 2 resets.']],
+   rec: 'a', why: 'Keeps the "kill, go again" moment on plays that matter without a free extra action every round.' },
+ { g: 'Heroes', id: 'Q13', t: 'Death Mark execute threshold', ctx: 'Shade\'s ultimate kills a hero at or below this share of max HP.',
+   o: [['a', '20%', 'Current draft and prototype.'], ['b', '15%', '']],
+   rec: 'a', why: 'Equal on fragile heroes at level 3; 15% only matters late and on tanks. Test 15% if the late one-shot feels unfair.' },
+ { g: 'Heroes', id: 'Q17', t: 'Viper\'s damage over time', ctx: 'How her poison works.',
+   o: [['a', 'Poison as her own trait, fixed damage', 'Current draft.'], ['b', 'Bring back Burn as a 6th condition any hero can use', ''], ['c', 'Poison that scales with POW', 'Makes level-5 Viper the strongest attacker.']],
+   rec: 'a', why: 'Keeps the 5-condition card; (b) only if more damage-over-time heroes are planned.' },
+ { g: 'Draft', id: 'Q14', t: 'Who takes each draft pick', ctx: 'Within a team.',
+   o: [['a', 'Next seat in seat order', 'Current draft. Players can swap seats in the lobby first.'],
+       ['b', 'Any teammate who hasn\'t picked claims it', 'First to lock in.'],
+       ['c', 'A captain assigns each pick', '']],
+   rec: 'a', why: 'No races to claim a pick online, and it works the same in hotseat and with bots. Hero trades after the draft can come later.' },
+ { g: 'Draft', id: 'Q15', t: 'Bans', ctx: 'Removing heroes before picks.',
+   o: [['a', 'No bans for now', 'Add them once there are 3 heroes per class.'], ['b', '1 ban per team', ''], ['c', '2 bans per team', '']],
+   rec: 'a', why: 'With 14 heroes, 1 ban per team leaves a team missing a role it wants in 84% of 4v4 drafts (6% with 21 heroes).' },
+ { g: 'Draft', id: 'Q16', t: 'Who has first pick', ctx: 'First pick is an advantage.',
+   o: [['a', 'Azure always', 'Like the prototype.'], ['b', 'Coin flip', ''], ['c', 'Alternate between matches', 'Rematch: the other team picks first.'],
+       ['d', 'Coin flip for first pick; the other team chooses who starts round 1', ''],
+       ['dc', '(d), and alternate on rematches', '']],
+   rec: 'dc', why: 'Splits two advantages between the teams with no new rule.' },
+];
+const GROUPS = [...new Set(QS.map(q => q.g))];
+let ANS = {}, NOTES = {}, GENERAL = '';
+let db = null, ref = null, room = null, saveTimer = null, saving = false, again = false;
+const $ = s => document.querySelector(s);
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+function toast(m) { const t = $('#toast'); t.textContent = m; t.hidden = false; clearTimeout(toast.t); toast.t = setTimeout(() => t.hidden = true, 2600); }
+function optLabel(q, v) { const o = q.o.find(x => x[0] === v); return o ? o[1] : v; }
+
+function build() {
+  $('#groups').innerHTML = GROUPS.map(g => `<section class="group"><h2>${esc(g)}</h2>${QS.filter(q => q.g === g).map(q => `
+    <div class="q" id="card-${q.id}" role="radiogroup" aria-labelledby="h-${q.id}">
+      <div class="qhead"><span class="qid">${q.id}</span><h3 id="h-${q.id}">${esc(q.t)}</h3></div>
+      <p class="ctx">${esc(q.ctx)}</p>
+      <div class="opts">${q.o.map(([v, l, sub]) => `<label class="opt"><input type="radio" name="${q.id}" id="${q.id}-${v}" value="${v}"><span><b>${esc(l)}</b>${v === q.rec ? '<span class="rec">recommended</span>' : ''}${sub ? `<span class="sub">${esc(sub)}</span>` : ''}</span></label>`).join('')}</div>
+      <p class="why"><b>Why the recommendation:</b> ${esc(q.why)}</p>
+      <textarea id="note-${q.id}" data-note="${q.id}" rows="1" placeholder="Note (optional): tweak a number, combine options, or describe your own"></textarea>
+    </div>`).join('')}</section>`).join('');
+}
+function paint() {
+  for (const q of QS) {
+    const v = ANS[q.id];
+    for (const [ov] of q.o) { const el = document.getElementById(`${q.id}-${ov}`); if (el) el.checked = ov === v; }
+    const n = document.getElementById('note-' + q.id); if (n && document.activeElement !== n) n.value = NOTES[q.id] || '';
+    $('#card-' + q.id).classList.toggle('done', !!v);
+  }
+  if (document.activeElement !== $('#general')) $('#general').value = GENERAL;
+  const done = QS.filter(q => ANS[q.id]).length;
+  $('#progbar').style.width = (100 * done / QS.length) + '%';
+  $('#progtxt').textContent = `${done} of ${QS.length} decided`;
+  $('#finalTxt').textContent = done === QS.length ? 'All 17 decided.' : `Answered ${done} of ${QS.length}. Unanswered questions keep the current draft.`;
+}
+function setStatus(t, ok) { const s = $('#status'); s.textContent = t; s.classList.toggle('ok', !!ok); }
+function local(save) {
+  try { if (save) localStorage.setItem('lf-decisions', JSON.stringify({ ANS, NOTES, GENERAL })); else return JSON.parse(localStorage.getItem('lf-decisions') || 'null'); } catch (e) { return null; }
+}
+function queueSave() {
+  local(true);
+  if (!ref) { setStatus('Saved in this browser only'); return; }
+  setStatus('Saving…'); clearTimeout(saveTimer); saveTimer = setTimeout(doSave, 700);
+}
+async function doSave() {
+  saveTimer = null;
+  if (saving) { again = true; return; }
+  saving = true;
+  try {
+    await ref.set({ answers: ANS, notes: NOTES, general: GENERAL, decided: QS.filter(q => ANS[q.id]).length, savedAt: Date.now() });
+    setStatus('Saved', true);
+  } catch (e) { setStatus('Not saved: ' + (e && e.code ? e.code : 'error') + '. Use “Copy answers”.'); }
+  finally { saving = false; if (again) { again = false; doSave(); } }
+}
+function summary() {
+  const lines = ['Lanefall design decisions:'];
+  for (const q of QS) {
+    const v = ANS[q.id];
+    lines.push(`${q.id} ${q.t}: ${v ? `(${v}) ${optLabel(q, v)}` : 'no answer (keep draft)'}${NOTES[q.id] ? ' — note: ' + NOTES[q.id] : ''}`);
+  }
+  if (GENERAL.trim()) lines.push('General notes: ' + GENERAL.trim());
+  return lines.join('\n');
+}
+
+document.addEventListener('change', e => {
+  const t = e.target;
+  if (t.type === 'radio') { ANS[t.name] = t.value; paint(); queueSave(); }
+});
+document.addEventListener('input', e => {
+  const t = e.target;
+  if (t.dataset && t.dataset.note) { NOTES[t.dataset.note] = t.value.slice(0, 1000); queueSave(); }
+  else if (t.id === 'general') { GENERAL = t.value.slice(0, 3000); queueSave(); }
+});
+$('#acceptAll').addEventListener('click', () => {
+  let n = 0; for (const q of QS) if (!ANS[q.id]) { ANS[q.id] = q.rec; n++; }
+  paint(); queueSave(); toast(n ? `Pre-filled ${n} answer${n === 1 ? '' : 's'}. Change any you disagree with.` : 'Every question already has an answer.');
+});
+$('#copyBtn').addEventListener('click', () => {
+  const txt = summary();
+  const fallback = () => { const ta = $('#general'); const old = ta.value; ta.value = txt; ta.select(); toast('Select-all is on the notes box; copy it, then undo.'); setTimeout(() => { ta.value = old; }, 15000); };
+  try { navigator.clipboard.writeText(txt).then(() => toast('Copied. Paste it in the chat.'), fallback); } catch (e) { fallback(); }
+});
+$('#sendBtn').addEventListener('click', () => {
+  if (!room) return;
+  const data = { label: 'Lanefall design decisions', answers: ANS, notes: NOTES, general: GENERAL.slice(0, 1500) };
+  room.sendToClaudeSession(data, { deliver: 'send', attachPresence: false })
+    .then(() => toast('Sent to Claude. Check the conversation.'))
+    .catch(() => room.sendToClaudeSession(data, { attachPresence: false }).then(() => toast('Added to your message box. Press send.')).catch(() => toast('Could not reach Claude from here. Use “Copy answers”.')));
+});
+
+build();
+const saved = local(false);
+if (saved) { ANS = saved.ANS || {}; NOTES = saved.NOTES || {}; GENERAL = saved.GENERAL || ''; }
+paint();
+(async () => {
+  try {
+    db = window.claude && window.claude.use ? await window.claude.use('db') : null;
+    if (db) {
+      ref = db.doc('decisions/eddie');
+      const t = setTimeout(() => setStatus('Answers will save in this browser until the store answers'), 10000);
+      ref.onSnapshot(s => {
+        clearTimeout(t);
+        if (s.exists && !saving && !saveTimer) { const d = s.data() || {}; ANS = Object.assign({}, d.answers || {}); NOTES = Object.assign({}, d.notes || {}); GENERAL = d.general || ''; paint(); }
+        if (!s.exists && (Object.keys(ANS).length || GENERAL)) queueSave();
+        else if (!saveTimer && !saving) setStatus(s.exists ? 'Saved' : 'Not saved yet', s.exists);
+      }, () => setStatus('Live saving stopped. Use “Copy answers”.'));
+    } else setStatus('Saved in this browser only');
+  } catch (e) { setStatus('Saved in this browser only'); }
+  try {
+    room = window.claude && window.claude.use ? await window.claude.use('room') : null;
+    if (room) { const c = await room.canSendToClaudeSession(); $('#sendBtn').hidden = !['available', 'available_if_summoned', 'available_if_opened'].includes(c); }
+  } catch (e) { room = null; }
+})();
+</script>
