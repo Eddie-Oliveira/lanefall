@@ -26,6 +26,20 @@ Rules
 
 ---
 
+### [2026-11-04] v1.0-dev · UX spec: flows, HUD, tutorial, quick reference, accessibility
+areas: UX | CODE | NET | BOTS | ASSETS | DESIGN
+agent: ux
+- New `docs/ux/` for GDD v1.0, aimed at Eddie's goal (understood in one match): every screen from title to rematch incl. online states (reconnect, host left, bot takes a seat, timer expiry, Go next), Commander draft with starter pairs, coin flip + round-1 choice, results that say how the match ended; copy rules (FLOWS 10: "turn" not "activation", MOBA words always paired with their meaning, every disabled control says why).
+- HUD: desktop + phone wireframes, single-alternation turn strip with skip markers and "left" lists, aim → preview → confirm for every action (damage math, LoS lit/hatched hexes + sight line, tower rings that hatch when they'd shoot you, live lane forecast, forced-move ghosts, Stun timing/Steadfast, Poison, Chain, execute line, Shade's 4th pip), planning mode + Threat overlay for the 4v4 wait, 3D camera limits; **rule → cue table: 55 rules, 55 cues**.
+- Tutorial: GDD 14 as a step script (ask / bot / copy / success check per step) + one-screen veteran glossary; quick reference rewritten as one-screen UI copy with this match's numbers filled in; accessibility: blue `#2F7FE8` / amber `#F5A030` teams (checked for protan/deutan/tritan) + ◆/▲ emblems and ring patterns, text sizes, reduce motion, remapping, no hotseat privacy screen (open information), timer options.
+- Files: docs/ux/FLOWS.md, docs/ux/HUD.md, docs/ux/TUTORIAL.md, docs/ux/QUICKREF.md, docs/ux/ACCESSIBILITY.md
+- Tests: n/a (spec); color pairs checked with a Machado-2009 CVD simulation (ΔE ≥ 106, ≥ 3.5 : 1 vs board ground in all modes)
+- Needs: CODE: previews in `LegalActions` exactly as listed in HUD 13 (damage split ARM/Shield, KO/VP/gold/assist, wave kills, lane-forecast delta, dive shot + "already shot", no-minion-cover warning for a destination hex, forced-move final hex + stop reason, pull-to-centre order/ties, Stun timing "this round / round n", Steadfast and no-stack no-ops, Poison total, Chain candidates, execute threshold, `grantsAction`, Bite, relic); illegal-target **reason codes**; per-hex LoS mask; `Threat` with per-source breakdown; `ActivationOrder` slots with claim/skip info; undoable last Move when it triggered nothing.
+- Needs: ASSETS: team palette + second cues per ACCESSIBILITY 1 (blue `#2F7FE8` / amber `#F5A030` proposed; ◆ diamond-notch ring vs ▲ sawtooth ring; band vs diagonal-hatch patterns; please confirm or counter-propose in your style guide); condition/state icons by shape (Stun, Steadfast grey ring, Root, Slow, Silence, Shield n, Poison drop + 3 pips, Haste, Hidden, Recalling, Aegis, Drake stacks, skip marker); hatched LoS and danger-ring materials; hero portraits with role corner; coin-flip animation; readable font with distinct Il1/O0.
+- Needs: NET: online overlay states FLOWS 8 (S50–S57): reconnect with timer still running, bot takeover at turn end and hand-back at the player's next turn, host migration from the replay log, missed-events summary on reconnect, Go next claims, auto-spent 30 s bank (proposal), version/desync messages; ready checks in the lobby; per-player load progress.
+- Needs: BOTS: scripted tutorial Easy Pyra (TUTORIAL A.5); bot reveal delay 1–2 s with a one-line reason ("team needed a Mage") in the draft.
+- Needs: DESIGN: (1) Shop only at the start of a turn in base will read as a bug when a player walks into base mid-turn — propose "shop any time during your turn while in your base"; (2) bank auto-used at 0 s; (3) Echo Slam "+1 per other enemy unit (heroes and minions)": does a wave count per minion or as 1 unit?; (4) Hidden Shade: is her mini still visible to enemies (UX assumes yes, translucent, no hidden info)?; (5) tutorial-only setup: heroes start at their Mid tower and 2 minions per side exist at round 1 — and do real matches start with waves (GDD 5.1 only spawns in the Lane phase)?; (6) tutorial Drake from round 6.
+
 ### [2026-11-04] v0.3.3 · Prototype: line of sight for all ranged enemy targeting (Q11)
 areas: CODE | QA
 agent: lead
